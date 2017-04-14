@@ -23,7 +23,7 @@ def get_datahub():
     datahub.set_args(args)
     datahub.align_distance = 15000
     for sample_name, sample in datahub.samples.items():
-        sample.search_distance = 10000
+        sample.search_distance = 2400
     datahub.realigner = realignment.Realigner(datahub.genome)
 
     return datahub
@@ -129,6 +129,8 @@ def genotype_variant(datahub):
     for sample_name, sample in datahub.samples.items():
         ref_count = 0
         alt_count = 0
+
+        sample.set_bwa_params(datahub.realigner)
 
         for batch in get_read_batch(sample, datahub):
             if sample.single_ended:

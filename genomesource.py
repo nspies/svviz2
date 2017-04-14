@@ -45,15 +45,6 @@ class GenomeSource(object):
         """
         bwa = seqlib.BWAWrapper()
         bwa.makeIndex(self.names_to_contigs)
-        
-        # bwa.SetMinSeedLength(17)
-        # bwa.SetMinChainWeight(40)
-
-        # bwa.SetGapOpen(1)
-        # bwa.SetGapExtension(1)
-        # bwa.SetMismatchPenalty(1)
-        # bwa.Set3primeClippingPenalty(0)
-        # bwa.Set5primeClippingPenalty(0)
 
         return bwa
 

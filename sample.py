@@ -5,8 +5,45 @@ import pysam
 import sys
 
 from kde import gaussian_kde
+import mapq
 
 logger = logging.getLogger(__name__)
+
+def set_illumina_params(bwa):
+    bwa.SetMinSeedLength(19)
+    bwa.SetMinChainWeight(0)
+
+    bwa.SetGapOpen(6)
+    bwa.SetGapExtension(1)
+    bwa.SetMismatchPenalty(4)
+    bwa.Set3primeClippingPenalty(5)
+    bwa.Set5primeClippingPenalty(5)
+
+    bwa.SetReseedTrigger(1.5)
+
+def set_pacbio_params(bwa):
+    bwa.SetMinSeedLength(17)
+    bwa.SetMinChainWeight(40)
+
+    bwa.SetGapOpen(1)
+    bwa.SetGapExtension(1)
+    bwa.SetMismatchPenalty(1)
+    bwa.Set3primeClippingPenalty(0)
+    bwa.Set5primeClippingPenalty(0)
+
+    bwa.SetReseedTrigger(10)
+
+def set_minion_params(bwa):
+    bwa.SetMinSeedLength(14)
+    bwa.SetMinChainWeight(20)
+
+    bwa.SetGapOpen(1)
+    bwa.SetGapExtension(1)
+    bwa.SetMismatchPenalty(1)
+    bwa.Set3primeClippingPenalty(0)
+    bwa.Set5primeClippingPenalty(0)
+
+    bwa.SetReseedTrigger(10)
 
 
 class Sample(object):
@@ -26,6 +63,23 @@ class Sample(object):
         if self.read_statistics.orientations == "any":
             self.single_ended = True
 
+        self._sequencer = "illumina"
+        if self.single_ended:
+            mismatches = numpy.mean(self.read_statistics.number_mismatches)
+            lengths = numpy.mean(self.read_statistics.readLengths)
+            mismatch_rate = mismatches / lengths
+
+            # these error rates aren't really accurate in terms of describing the 
+            # two platforms anymore, but they do correspond to the presets that
+            # bwa mem has, which we're mimicking
+            if mismatch_rate > 0.10:
+                self._sequencer = "minion"
+            elif mismatch_rate > 0.01:
+                self._sequencer = "pacbio"
+
+        print("ALIGNMENT PARAMS:::", self._sequencer)
+
+
     @property
     def bam(self):
         if self._bam is None:
@@ -36,6 +90,16 @@ class Sample(object):
                 logger.error("ERROR: Need to create index for input bam file: {}".format(self.bam_path))
                 sys.exit(0)
         return self._bam
+
+    def set_bwa_params(self, realigner):
+        for bwa in [realigner.ref_mapper, realigner.alt_mapper]:
+            if self._sequencer == "illumina":
+                set_illumina_params(bwa)
+            elif self._sequencer == "pacbio":
+                set_pacbio_params(bwa)
+            elif self._sequencer == "minion":
+                set_minion_params(bwa)
+
 
     def __getstate__(self):
         """ allows pickling of Samples()s """
@@ -49,6 +113,8 @@ class ReadStatistics(object):
         self.insertSizes = []
         self.readLengths = []
         self.orientations = []
+        self.number_mismatches = []
+
         self._insertSizeKDE = None
         self.singleEnded = False
 
@@ -56,7 +122,7 @@ class ReadStatistics(object):
 
         try:
             results = sampleInsertSizes(bam)
-            self.insertSizes, self.orientations, self.readLengths = results
+            self.insertSizes, self.orientations, self.readLengths, self.number_mismatches = results
             if len(self.insertSizes) > 1:
                 logger.info("  insert size mean: {:.2f} std: {:.2f} min:{} max:{}".format(
                     numpy.mean(self.insertSizes), numpy.std(self.insertSizes),
@@ -168,7 +234,7 @@ def getSearchRegions(bam, minLength=0):
         for chrom in sorted(chromosomes):
             yield chrom, start, end
 
-def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40):
+def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40, reference=None):
     """ get the insert size distribution, cutting off the tail at the high end, 
     and removing most oddly mapping pairs
 
@@ -177,10 +243,20 @@ def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40):
 
     inserts = []
     readLengths  = []
+    nms = []
     
     count = 0
 
     orientations = collections.Counter()
+
+    if reference is not None:
+        mapq_calculator = mapq.MAPQCalculator(reference)
+
+    def tally_nm(_read):
+        if reference is not None and not _read.has_tag("NM"):
+            mapq_calculator.get_alignment_end_score(_read)
+        if _read.has_tag("NM"):
+            nms.append(_read.get_tag("NM"))
 
     for chrom, start, end in getSearchRegions(bam):
         for read in bam.fetch(chrom, start, end):
@@ -192,9 +268,11 @@ def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40):
                 # bail out early if it looks like it's single-ended
                 break
 
+
             if not read.is_paired:
                 orientations["unpaired"] += 1
                 readLengths.append(len(read.seq))
+                tally_nm(read)
                 continue
                 
             if not read.is_read1:
@@ -219,6 +297,8 @@ def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40):
             orientations[curOrient] += 1
             readLengths.append(len(read.seq))
 
+            tally_nm(read)
+
             count += 1
             if count > maxreads:
                 break
@@ -227,4 +307,6 @@ def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40):
 
     chosenOrientations = chooseOrientation(orientations)
 
-    return removeOutliers(inserts), chosenOrientations, numpy.array(readLengths)
+    # print("NM "*30, numpy.mean(nms), numpy.mean(readLengths),
+    #     numpy.median(numpy.array(nms)/numpy.array(readLengths, dtype=float)))
+    return removeOutliers(inserts), chosenOrientations, numpy.array(readLengths), numpy.array(nms)
