@@ -2,6 +2,7 @@ import collections
 import logging
 
 # from svviz.utilities import Locus, getListDefault
+import genomesource
 from utilities import Locus
 
 
@@ -166,14 +167,6 @@ class StructuralVariant(object):
             names_to_references[chrom_part.id] = chrom_part.get_seq()
         return names_to_references
 
-    # def ref_seqs(self):
-    #     """ an abbreviated version of the reference genome """
-    #     names_to_references = {}
-    #     chrom_parts_collection = self.chrom_parts("ref")
-    #     for name, chrom_part in chrom_parts_collection.parts.items():
-    #         names_to_references[chrom_part.id] = chrom_part.get_seq()
-    #     return names_to_references
-
     def chrom_parts(self, allele):
         """ overload this method for multi-part variants """
         segments = self.segments(allele)
@@ -185,10 +178,6 @@ class StructuralVariant(object):
         parts = [ChromPart(name, segments, self.sources)]
         return ChromPartsCollection(parts)   
 
-    def segments(self, allele):
-        raise Exception("use .parts() instead!")
-        # for visual display of the different segments between breakpoints
-        return None
 
     def _segments(self, allele):
         segments = []
@@ -196,36 +185,161 @@ class StructuralVariant(object):
             segments.extend(part.segments)
         return segments
 
-    def common_segments(self):
-        """ return the segment IDs of the segments that are identical between 
-        the ref and alt alleles (eg, flanking regions) """
-        common = []
-        refCounter = collections.Counter((segment.id for segment in self._segments("ref")))
-        altCounter = collections.Counter((segment.id for segment in self._segments("alt")))
-        if max(refCounter.values()) > 1 or max(altCounter.values()) > 1:
-            logging.warn(" Same genomic region repeated multiple times within one allele; "
-                "all flanking reads will be marked as ambiguous")
-            return []
+    # def common_segments(self):
+    #     """ return the segment IDs of the segments that are identical between 
+    #     the ref and alt alleles (eg, flanking regions) """
+    #     common = []
+    #     refCounter = collections.Counter((segment.id for segment in self._segments("ref")))
+    #     altCounter = collections.Counter((segment.id for segment in self._segments("alt")))
+    #     if max(refCounter.values()) > 1 or max(altCounter.values()) > 1:
+    #         logging.warn(" Same genomic region repeated multiple times within one allele; "
+    #             "all flanking reads will be marked as ambiguous")
+    #         return []
 
 
-        refSegments = dict((segment.id, segment) for segment in self._segments("ref"))
-        altSegments = dict((segment.id, segment) for segment in self._segments("alt"))
+    #     refSegments = dict((segment.id, segment) for segment in self._segments("ref"))
+    #     altSegments = dict((segment.id, segment) for segment in self._segments("alt"))
 
-        for segmentID, refSegment in refSegments.items():
-            if not segmentID in altSegments:
-                continue
-            altSegment = altSegments[segmentID]
+    #     for segmentID, refSegment in refSegments.items():
+    #         if not segmentID in altSegments:
+    #             continue
+    #         altSegment = altSegments[segmentID]
 
-            # Could remove the requirement to have the strand be the same
-            # allowing the reads within the inversion to be plotted too
-            if refSegment.chrom==altSegment.chrom and \
-                refSegment.start == altSegment.start and \
-                refSegment.end == altSegment.end and \
-                refSegment.strand == altSegment.strand and \
-                refSegment.source == altSegment.source:
-                common.append(segmentID)
+    #         # Could remove the requirement to have the strand be the same
+    #         # allowing the reads within the inversion to be plotted too
+    #         if refSegment.chrom==altSegment.chrom and \
+    #             refSegment.start == altSegment.start and \
+    #             refSegment.end == altSegment.end and \
+    #             refSegment.strand == altSegment.strand and \
+    #             refSegment.source == altSegment.source:
+    #             common.append(segmentID)
 
-        return common
+    #     return common
+
+
+class SequenceDefinedVariant(StructuralVariant):
+    def __init__(self, chrom, start, end, alt_seq, datahub):
+        breakpoint = Locus(chrom, start, end, "+")
+        super(SequenceDefinedVariant, self).__init__([breakpoint], datahub)
+
+        self.sources["insertion"] = genomesource.GenomeSource({"insertion":alt_seq})
+        self.insertionLength = len(alt_seq)
+
+    def search_regions(self, searchDistance):
+        chrom = self.breakpoints[0].chrom
+        return [Locus(chrom, non_negative(self.breakpoints[0].start-searchDistance), 
+                      self.breakpoints[-1].end+searchDistance, "+")]
+
+    def segments(self, allele):
+        breakpoint = self.breakpoints[0]
+        chrom = breakpoint.chrom
+
+        # If breakpoint has no length, we make the insertion before the breakpoint coordinate
+        deletionOffset = 0
+        if len(breakpoint) > 1:
+            # If we're deleting some bases in addition to inserting, we'll make sure to start
+            # the last segment after the deleted bases
+            deletionOffset = 1
+
+        if allele in ["ref", "amb"]:
+            refSegments = []
+            refSegments.append(Segment(chrom, breakpoint.start-self.align_distance, breakpoint.start-1, "+", 0))
+            if len(breakpoint) > 1:
+                refSegments.append(Segment(chrom, breakpoint.start, breakpoint.end, "+", 3))
+
+            refSegments.append(Segment(chrom, breakpoint.end+deletionOffset, breakpoint.end+self.align_distance, "+", 2))
+            return refSegments
+        elif allele == "alt":
+            return [Segment(chrom, breakpoint.start-self.align_distance, breakpoint.start-1, "+", 0),
+                    Segment("insertion", 0, self.insertionLength, "+", 1, source="insertion"),
+                    Segment(chrom, breakpoint.end+deletionOffset, breakpoint.end+self.align_distance, "+", 2)]
+
+    def __str__(self):
+        if len(self.breakpoints[0]) > 1:
+            return "{}::{}:{:,}-{:,};len={}".format(self.__class__.__name__, 
+                                                  self.breakpoints[0].chrom, 
+                                                  self.breakpoints[0].start, 
+                                                  self.breakpoints[0].end,
+                                                  self.insertionLength)
+
+        return "{}::{}:{:,};len={}".format(self.__class__.__name__, self.breakpoints[0].chrom, self.breakpoints[0].start, self.insertionLength)
+       
+    def short_name(self):
+        return "{}_{}_{}-{}".format(self.__class__.__name__,
+            self.breakpoints[0].chrom, 
+            self.breakpoints[0].start, 
+            self.breakpoints[-1].end)
+
+
+class Breakend(StructuralVariant):
+    def __init__(self, breakpoint1, breakpoint2, datahub):
+        super(Breakend, self).__init__([breakpoint1, breakpoint2], datahub)
+
+        self.breakpoints = [breakpoint1, breakpoint2]
+        self.chrom_parts("alt")
+
+    def search_regions(self, searchDistance):
+        search_regions = []
+
+        for breakpoint in self.breakpoints:
+            cur_locus = Locus(breakpoint.chrom,
+                              non_negative(breakpoint.start-searchDistance), 
+                              breakpoint.end+searchDistance,
+                              breakpoint.strand)
+            search_regions.append(cur_locus)
+
+        return search_regions
+
+    def chrom_parts(self, allele):
+        b1 = self.breakpoints[0]
+        b2 = self.breakpoints[1]
+
+        segments = []
+        for i, breakpoint in enumerate(self.breakpoints):
+            segments.append(Segment(breakpoint.chrom, breakpoint.start-self.align_distance, 
+                                    breakpoint.start, "+", 0+i*2))
+            segments.append(Segment(breakpoint.chrom, breakpoint.start, 
+                                    breakpoint.start+self.align_distance, "+", 1+i*2))
+
+        parts = []
+        if allele in ["ref", "amb"]:
+            name = "ref_{}".format(b1.chrom)
+            parts.append(ChromPart(name, [segments[0], segments[1]], self.sources))
+
+            name = "ref_{}".format(b2.chrom)
+            if b1.chrom == b2.chrom: name += "b"
+            parts.append(ChromPart(name, [segments[2], segments[3]], self.sources))
+
+        else:
+            if b1.strand == "+": s1 = segments[0]
+            else: s1 = segments[1].antisense()
+
+            if b2.strand == "+": s2 = segments[3]
+            else: s2 = segments[2].antisense()
+            
+            l1 = Locus(s1.chrom, s1.start, s1.end, "+")
+            l2 = Locus(s2.chrom, s2.start, s2.end, "+")
+            if l1.overlaps(l2) or l1.overlapsAntisense(l2):
+                raise Exception("Not yet implemented - breakend-breakpoints near one another")
+
+            # loci = [Locus(s.chrom, s.start, s.end, "+") for s in segments]
+            # for i in range(len(loci)-1):
+            #     for j in range(i+1, len(loci)):
+            #         if loci[i].overlaps(loci[j]):
+            #             raise Exception("Not yet implemented - breakend-breakpoints near one another")
+
+            name = "alt_{}/{}".format(b1.chrom, b2.chrom)
+            parts.append(ChromPart(name, [s1, s2], self.sources))
+
+        return ChromPartsCollection(parts) 
+
+    def __str__(self):
+        chrom1 = self.breakpoints[0].chrom
+        chrom2 = self.breakpoints[1].chrom
+        if not chrom1.startswith("chr"):
+            chrom1 = "chr{}".format(chrom1)
+            chrom2 = "chr{}".format(chrom2)
+        return "{}__{}:{:,}__{}:{:,}".format(self.__class__.__name__, chrom1, self.breakpoints[0].start, chrom2, self.breakpoints[1].start)
 
 
 # class Deletion(StructuralVariant):
@@ -456,77 +570,6 @@ class StructuralVariant(object):
 #             chrom1 = "chr{}".format(chrom1)
 #             chrom2 = "chr{}".format(chrom2)
 #         return "{}::{}:{:,}/{}:{:,}".format(self.__class__.__name__, chrom1, self.breakpoints[0].start, chrom2, self.breakpoints[1].start)
-
-class Breakend(StructuralVariant):
-    def __init__(self, breakpoint1, breakpoint2, datahub):
-        super(Breakend, self).__init__([breakpoint1, breakpoint2], datahub)
-
-        self.breakpoints = [breakpoint1, breakpoint2]
-        self.chrom_parts("alt")
-
-    def search_regions(self, searchDistance):
-        search_regions = []
-
-        for breakpoint in self.breakpoints:
-            cur_locus = Locus(breakpoint.chrom,
-                              non_negative(breakpoint.start-searchDistance), 
-                              breakpoint.end+searchDistance,
-                              breakpoint.strand)
-            search_regions.append(cur_locus)
-
-        return search_regions
-
-    def chrom_parts(self, allele):
-        b1 = self.breakpoints[0]
-        b2 = self.breakpoints[1]
-
-        segments = []
-        for i, breakpoint in enumerate(self.breakpoints):
-            segments.append(Segment(breakpoint.chrom, breakpoint.start-self.align_distance, 
-                                    breakpoint.start, "+", 0+i*2))
-            segments.append(Segment(breakpoint.chrom, breakpoint.start, 
-                                    breakpoint.start+self.align_distance, "+", 1+i*2))
-
-        parts = []
-        if allele in ["ref", "amb"]:
-            name = "ref_{}".format(b1.chrom)
-            parts.append(ChromPart(name, [segments[0], segments[1]], self.sources))
-
-            name = "ref_{}".format(b2.chrom)
-            if b1.chrom == b2.chrom: name += "b"
-            parts.append(ChromPart(name, [segments[2], segments[3]], self.sources))
-
-        else:
-            if b1.strand == "+": s1 = segments[0]
-            else: s1 = segments[1].antisense()
-
-            if b2.strand == "+": s2 = segments[3]
-            else: s2 = segments[2].antisense()
-            
-            l1 = Locus(s1.chrom, s1.start, s1.end, "+")
-            l2 = Locus(s2.chrom, s2.start, s2.end, "+")
-            if l1.overlaps(l2) or l1.overlapsAntisense(l2):
-                raise Exception("Not yet implemented - breakend-breakpoints near one another")
-
-            # loci = [Locus(s.chrom, s.start, s.end, "+") for s in segments]
-            # for i in range(len(loci)-1):
-            #     for j in range(i+1, len(loci)):
-            #         if loci[i].overlaps(loci[j]):
-            #             raise Exception("Not yet implemented - breakend-breakpoints near one another")
-
-            name = "alt_{}/{}".format(b1.chrom, b2.chrom)
-            parts.append(ChromPart(name, [s1, s2], self.sources))
-
-
-        return ChromPartsCollection(parts) 
-
-    def __str__(self):
-        chrom1 = self.breakpoints[0].chrom
-        chrom2 = self.breakpoints[1].chrom
-        if not chrom1.startswith("chr"):
-            chrom1 = "chr{}".format(chrom1)
-            chrom2 = "chr{}".format(chrom2)
-        return "{}__{}:{:,}__{}:{:,}".format(self.__class__.__name__, chrom1, self.breakpoints[0].start, chrom2, self.breakpoints[1].start)
 
 
 

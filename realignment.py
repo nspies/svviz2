@@ -68,14 +68,17 @@ class Realigner(object):
         seq2 = pair.read2.original_sequence()
 
         end_aln_set = self._realign_pair(seq1, seq2, pair.read1.query_name)
-        if pair.read1.query_name == "D00360:99:C8VWFANXX:4:2310:5190:27306":
+        if pair.read1.query_name == "HA2WPADXX:19:5:1605415:0":
             print("ENDS SEPARATELY:")
             print("...ref...")
-            for aln in end_aln_set.get_alns("ref"):
-                print(aln)
+            for end in [1,2]:
+                print("{}".format(end)*30)
+                for aln in end_aln_set.get_alns("ref", end):
+                    print(aln)
             print("...alt...")
-            for aln in end_aln_set.get_alns("alt"):
-                print(aln)
+            for end in [1,2]:
+                for aln in end_aln_set.get_alns("alt", end):
+                    print(aln)
             print(".........")
 
         ref_pairs = self.ref_mapq_calculator.score_pairs(

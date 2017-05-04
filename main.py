@@ -21,7 +21,7 @@ def get_datahub():
 
     datahub = DataHub()
     datahub.set_args(args)
-    datahub.align_distance = 15000
+    datahub.align_distance = 1000
     for sample_name, sample in datahub.samples.items():
         sample.search_distance = 2400
     datahub.realigner = realignment.Realigner(datahub.genome)
@@ -66,6 +66,17 @@ def get_read_pairs(sample, datahub):
     paired_read_iter = pairedreaditer.PairedReadIter(sample.bam, search_regions)
 
     for read_pair in paired_read_iter:
+        if read_pair.query_name == "HA2WPADXX:19:5:1605415:0":
+            print("!"*30)
+            print(read_pair.read1._read)
+            print(read_pair.read2._read)
+            print("!"*30)
+            import genomesource
+            g = genomesource.FastaGenomeSource("/Volumes/frida/nspies/data/bwa-hg19/hg19.fasta")
+            realigner = realignment.Realigner(g)
+            realigner.set_alt_genome_source(g)
+            realigner.realign_pair(read_pair, sample.read_statistics)
+
         cur_read_pairs.append(read_pair)
         if datahub.args.batch_size is not None and len(cur_read_pairs) >= datahub.args.batch_size:
             yield cur_read_pairs
@@ -156,6 +167,7 @@ def run(datahub):
     """ this runs the app on the provided datahub """
     for variant in datahub.get_variants():
         genotype_variant(datahub)
+        afgjhkl()
 
 def main():
     """ entry point from command line """

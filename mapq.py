@@ -37,11 +37,14 @@ class MAPQCalculator(object):
     def __init__(self, reference):
         self.reference = reference
         self.scoring = {
-            "match" : 1.0,
-            "mismatch": -2.0,
+            "match" : 0.0,       # when set to zero, these probabilities are calculated
+            "mismatch": 0.0,     # exclusively from the base qualities
+
             "gap_open": -3.0,
             "gap_extend": -1.0,
             "clipping_penalty": 0.0,
+            "discordant_penalty": -15,
+
             "phred_scale": 10.0,
 
             "min_base_quality": 0,
@@ -116,13 +119,13 @@ class MAPQCalculator(object):
             elif read_seq != cur_ref_seq:
                 # mismatch
                 in_gap = False
-                log10_score += read_quality / -phred_scale
+                log10_score += read_quality / -phred_scale + self.scoring["mismatch"]
                 nm += 1
             else:
                 # match
                 in_gap = False
                 prob = 1 - phred_to_prob(read_quality, self.scoring["phred_scale"])
-                log10_score += prob_to_phred(prob, -1)
+                log10_score += prob_to_phred(prob, -1) + self.scoring["match"]
 
             i += 1
 
@@ -151,6 +154,19 @@ class MAPQCalculator(object):
         return alns
 
 
+    def score_pairs_new(self, alns1, alns2, read_stats):
+        pairs = []
+        for aln1 in alns1:
+            for aln2 in alns2:
+                pair = PairAlignment(aln1, aln2)
+                pair.score = self._score_pair(pair, read_stats)
+
+                pairs.append(pair)
+
+        pairs.sort(key=lambda x: x.score, reverse=True)
+        pairs = [p for p in pairs if p.score!=0]   
+
+        return pair
 
     def score_pairs(self, alns1, alns2, read_stats):
         pairs = get_concordant_pairs(alns1, alns2, read_stats)
@@ -161,11 +177,12 @@ class MAPQCalculator(object):
         return pairs
 
     def _score_pair(self, read_pair, read_stats):
-        # t0 = time.time()
-
         # these are log10 likelihoods
         score1 = self.get_alignment_end_score(read_pair.read1)
         score2 = self.get_alignment_end_score(read_pair.read2)
+
+        # if not read_pair.concordant():
+        #     return score1 + score2 + self.scoring["discordant_penalty"]
 
         # this is a probability
         insert_size_prob = read_stats.scoreInsertSize(read_pair.insert_size)
@@ -175,9 +192,6 @@ class MAPQCalculator(object):
 
         # print("PAIR:", score1, score2, pair_prob, prob_to_phred(pair_prob, 10))
         # print(pair_prob, prob_to_phred(pair_prob, 10))
-
-        # t1 = time.time()
-        # logger.info("time:{:.4f}".format(t1-t0))
 
         return log10_pair_prob
 
@@ -191,8 +205,8 @@ def set_mapqs(alns):
     best_score = scores.max()
 
     if best_score < -300:
-        correction = best_score + 300
-        scores = scores - correction
+        # correction = best_score + 300
+        scores = scores - best_score
         scores[scores>0] = 0
 
     probs = 10 ** (scores)

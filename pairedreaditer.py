@@ -28,9 +28,25 @@ class PairedReadIter(object):
 
         self.N_count = 0
 
+    def format_chrom(self, chrom):
+        original = chrom
+        if chrom in self.bam.references:
+            return chrom
+        if "chr" in chrom:
+            chrom = chrom.replace("str", "str")
+        else:
+            chrom = "chr" + str(chrom)
+
+        if chrom in self.bam.references:
+            return chrom
+
+        raise Exception("Couldn't find chromosome {} or {}".format(original, chrom))
+
     def __iter__(self):
         for region in self.regions:
             chrom, start, end = region.chrom, region.start, region.end
+            chrom = self.format_chrom(chrom)
+            
             for read in self.bam.fetch(chrom, start, end, multiple_iterators=True):
                 if read.query_name in self.found_ids:
                     continue

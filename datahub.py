@@ -68,7 +68,7 @@ class DataHub(object):
                 # template=sample.bam)
 
         for allele in ["alt", "ref"]:
-            with open("{}_genome.{}.fa".format(allele, variant), "w") as genome_file:
+            with open("{}_genome.{}.fa".format(allele, variant.short_name()), "w") as genome_file:
                 for name, seq in self.variant.seqs(allele).items():
                     genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
 

@@ -7,10 +7,13 @@ import variants
 
 logger = logging.getLogger(__name__)
 
+def only_nucs(seq):
+    return set(list(seq)) <= set(list("ACGT"))
+
 class VCFParser(object):
     def __init__(self, datahub):
         self.datahub = datahub
-        self.vcf = pysam.VariantFile(datahub.args.variants)
+        self.vcf = pysam.VariantFile(datahub.args.variants, drop_samples=True)
 
     def get_variants(self):
         breakends = {}
@@ -19,28 +22,45 @@ class VCFParser(object):
                 print("variant does not appear to be a structural variant, skipping:{}".format(variant))
                 continue
 
-            sv_type = variant.info["SVTYPE"]
-
+            sv_type = variant.info["SVTYPE"].upper()
             if sv_type == "BND":
                 mateid = variant.info["MATEID"]
+                if not isinstance(mateid, str):
+                    if len(mateid) > 1:
+                        logger.error("ERROR: not sure what to do about this mateid: '{}'".format(mateid))
+                    else:
+                        mateid = mateid[0]
+
                 if "," in mateid:
                     NotImplementedError("we currently don't support ambiguous breakends")
 
                 if mateid in breakends:
                     breakend = get_breakend(variant, breakends.pop(mateid), self.datahub)
                     if breakend is not None:
+                        print(breakend.chrom_parts("ref"))
                         yield breakend
                 else:
                     assert not variant.id in breakends
                     breakends[variant.id] = variant
+            elif only_nucs(variant.ref) and only_nucs(variant.alts[0]):
+                if sv_type in ["INS", "DEL"]:
+                    yield get_sequence_defined(variant, self.datahub)
 
         if len(breakends) > 0:
             logger.warn("found {} unpaired breakends".format(len(breakends)))
 
+
+def get_sequence_defined(variant, datahub):
+    sdv = variants.SequenceDefinedVariant(
+        variant.chrom, variant.start, variant.stop-1,
+        variant.alts[0], datahub)
+
+    print(sdv)
+    return sdv
+
 def get_breakend(first, second, datahub):
     # return "{}\n{}".format(_parse_breakend(first), _parse_breakend(second))
     return parse_breakend(first, second, datahub)
-
 
 
 def _parse_breakend(record):
@@ -100,7 +120,7 @@ def parse_breakend(record1, record2, datahub):
 
     # convert from 1-based to 0-based coordinates
     breakpoint1 = utilities.Locus(chrom, pos-1, pos-1, orientation[0])
-    breakpoint2 = utilities.Locus(chrom, other_pos-1, other_pos-1, orientation[1])
+    breakpoint2 = utilities.Locus(other_chrom, other_pos-1, other_pos-1, orientation[1])
 
     print(breakpoint1, breakpoint2)
     return variants.Breakend(breakpoint1, breakpoint2, datahub)

@@ -2,6 +2,7 @@ import collections
 import logging
 import numpy
 import pysam
+import random
 import sys
 
 from kde import gaussian_kde
@@ -119,14 +120,16 @@ class ReadStatistics(object):
         self.singleEnded = False
 
         self._insertSizeScores = {} # cache
+        self._max_insert_size = None
 
         try:
             results = sampleInsertSizes(bam)
-            self.insertSizes, self.orientations, self.readLengths, self.number_mismatches = results
+            self.insertSizes, self.orientations, self.readLengths, self.number_mismatches, self.discordant_frac = results
             if len(self.insertSizes) > 1:
                 logger.info("  insert size mean: {:.2f} std: {:.2f} min:{} max:{}".format(
                     numpy.mean(self.insertSizes), numpy.std(self.insertSizes),
                     numpy.min(self.insertSizes), self.maxInsertSize()))
+                logger.info("  discordant: {:.4f}".format(self.discordant_frac))
         except Exception as e:
             logger.error("Error determining orientation / pairing statistics: {}".format(e))
 
@@ -152,9 +155,9 @@ class ReadStatistics(object):
         return False
 
     def maxInsertSize(self):
-        if self.hasInsertSizeDistribution():
-            return numpy.max(self.insertSizes)
-        return None
+        if self._max_insert_size is None and self.hasInsertSizeDistribution():
+            self._max_insert_size = numpy.max(self.insertSizes)
+        return self._max_insert_size
 
     def meanInsertSize(self):
         if self.hasInsertSizeDistribution():
@@ -226,13 +229,31 @@ def chooseOrientation(orientations):
 def getSearchRegions(bam, minLength=0):
     # get the chromosomes and move X, Y, M/MT to the end
     chromosomes = []
-    for i in range(bam.nreferences):
-        if bam.lengths[i] > minLength:
-            chromosomes.append(bam.getrname(i))
+    chrom_lengths = dict((bam.getrname(i),bam.lengths[i]) for i in range(bam.nreferences))
 
-    for start, end in [(2500000, 50000000), (None, None)]:
-        for chrom in sorted(chromosomes):
-            yield chrom, start, end
+    for chrom in chrom_lengths:
+        if chrom_lengths[chrom] > minLength:
+            chromosomes.append(chrom)
+    # for i in range(bam.nreferences):
+    #     if bam.lengths[i] > minLength:
+    #         chromosomes.append(bam.getrname(i))
+
+    ideal_start = 2500000
+
+    regions = []
+    for chrom in sorted(chromosomes):
+        for start in range(ideal_start, chrom_lengths[chrom]-ideal_start, 1000000):
+            regions.append((chrom, start, start+10000))
+
+    rand = random.Random()
+    rand.seed(9535)
+    rand.shuffle(regions)
+    for region in regions:
+        yield region
+
+    for chrom in sorted(chromosomes):
+        yield (chrom, None, None)
+
 
 def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40, reference=None):
     """ get the insert size distribution, cutting off the tail at the high end, 
@@ -258,6 +279,9 @@ def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40, reference=None):
         if _read.has_tag("NM"):
             nms.append(_read.get_tag("NM"))
 
+    discordant = 0
+    concordant = 0
+
     for chrom, start, end in getSearchRegions(bam):
         for read in bam.fetch(chrom, start, end):
             if skip > 0:
@@ -277,16 +301,19 @@ def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40, reference=None):
                 
             if not read.is_read1:
                 continue
-            
-            if not read.is_proper_pair:
-                continue
             if read.is_unmapped or read.mate_is_unmapped:
                 continue
-            if read.tid != read.rnext:
+            if read.is_secondary or read.is_supplementary:
                 continue
+            if not read.is_proper_pair:
+                discordant += 1
+                continue
+            else:
+                concordant += 1
+
             if read.mapq < minmapq:
                 continue
-            if read.is_secondary or read.is_supplementary:
+            if read.tid != read.rnext:
                 continue
 
             inserts.append(abs(read.isize))
@@ -309,4 +336,4 @@ def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40, reference=None):
 
     # print("NM "*30, numpy.mean(nms), numpy.mean(readLengths),
     #     numpy.median(numpy.array(nms)/numpy.array(readLengths, dtype=float)))
-    return removeOutliers(inserts), chosenOrientations, numpy.array(readLengths), numpy.array(nms)
+    return removeOutliers(inserts), chosenOrientations, numpy.array(readLengths), numpy.array(nms), discordant/float(discordant+concordant)
