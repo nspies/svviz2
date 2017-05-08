@@ -1,3 +1,4 @@
+import collections
 import logging
 import numpy
 import time
@@ -40,15 +41,16 @@ class MAPQCalculator(object):
             "match" : 0.0,       # when set to zero, these probabilities are calculated
             "mismatch": 0.0,     # exclusively from the base qualities
 
-            "gap_open": -3.0,
+            "gap_open": -1.0,
             "gap_extend": -1.0,
             "clipping_penalty": 0.0,
+            "min_clip_length": 10,
             "discordant_penalty": -15,
 
             "phred_scale": 10.0,
 
             "min_base_quality": 0,
-            "max_base_quality": 10
+            "max_base_quality": 5
         }
 
         self.rescale_base_qualities = True
@@ -74,7 +76,8 @@ class MAPQCalculator(object):
 
         aln_start = aln.reference_start
         aln_end = aln_start + aln.reference_length
-        ref_chrom = self.reference.get_chrom_by_id(aln.reference_id)
+        # ref_chrom = self.reference.get_chrom_by_id(aln.reference_id)
+        ref_chrom = aln.chrom
         ref_seq = self.reference.get_seq(ref_chrom, aln_start, aln_end, "+").upper()
 
         # print(aln.get_tag("AS"), aln.cigarstring)
@@ -84,6 +87,13 @@ class MAPQCalculator(object):
 
         i = 0
         nm = 0
+
+        clip_left_adjust =  min(1.0, aln.cigartuples[0][1] / self.scoring["min_clip_length"])
+        clip_right_adjust = min(1.0, aln.cigartuples[-1][1] / self.scoring["min_clip_length"])
+
+        # print(aln.cigartuples, clip_left_adjust, clip_right_adjust)
+        penalties = collections.defaultdict(int)
+
         for read_pos, ref_pos in aln.get_aligned_pairs():#matches_only=True):
             read_seq = None
             if read_pos is not None:
@@ -98,44 +108,51 @@ class MAPQCalculator(object):
 
             # print(i, read_pos, read_seq, ref_pos, cur_ref_seq, log10_score)
 
-            if i < aln.query_alignment_start or i >= aln.query_alignment_start+aln.query_alignment_length:
-                # print("  clipped")
-                log10_score += read_quality / -phred_scale + self.scoring["clipping_penalty"]
-                pass
+            if i < aln.query_alignment_start:
+                penalties["clip_left"] += (clip_left_adjust) * (read_quality / -phred_scale + self.scoring["clipping_penalty"])
+            elif i >= aln.query_alignment_start+aln.query_alignment_length:
+                penalties["clip_right"] += (clip_right_adjust) * (read_quality / -phred_scale + self.scoring["clipping_penalty"])
             elif read_seq is None:
                 # deletion
                 if in_gap:
-                    log10_score += read_quality / -phred_scale + self.scoring["gap_extend"]
+                    penalties["deletion_extend"] += read_quality / -phred_scale + self.scoring["gap_extend"]
                 else:
-                    log10_score += read_quality / -phred_scale + self.scoring["gap_open"]
+                    penalties["deletion_open"] += read_quality / -phred_scale + self.scoring["gap_open"]
                     in_gap = True
             elif cur_ref_seq is None:
                 # insertion
                 if in_gap:
-                    log10_score += read_quality / -phred_scale + self.scoring["gap_extend"]
+                    penalties["insertion_extend"] += read_quality / -phred_scale + self.scoring["gap_extend"]
                 else:
-                    log10_score += read_quality / -phred_scale + self.scoring["gap_open"]
+                    penalties["insertion_open"] += read_quality / -phred_scale + self.scoring["gap_open"]
                     in_gap = True
             elif read_seq != cur_ref_seq:
                 # mismatch
                 in_gap = False
-                log10_score += read_quality / -phred_scale + self.scoring["mismatch"]
+                penalties["mismatch"] += read_quality / -phred_scale + self.scoring["mismatch"]
                 nm += 1
             else:
                 # match
                 in_gap = False
                 prob = 1 - phred_to_prob(read_quality, self.scoring["phred_scale"])
-                log10_score += prob_to_phred(prob, -1) + self.scoring["match"]
+                penalties["match"] += prob_to_phred(prob, -1) + self.scoring["match"]
 
             i += 1
 
             # print(read_pos, read_seq, ref_pos, ref_seq, match)
         if aln.cigartuples[0][0] == BAM_CHARD_CLIP:
+            raise Exception("hard clipping not yet supported") # should match soft-clipping
             # log10_score += read_quality / -phred_scale + self.scoring["gap_open"]
-            log10_score += (read_quality / -phred_scale + self.scoring["clipping_penalty"]) * (aln.cigartuples[0][1])
+            penalties["hard_clip_left"] += (read_quality / -phred_scale + self.scoring["clipping_penalty"]) * (aln.cigartuples[0][1])
         if aln.cigartuples[-1][0] == BAM_CHARD_CLIP:
+            raise Exception("hard clipping not yet supported") # should match soft-clipping
             # log10_score += read_quality / -phred_scale + self.scoring["gap_open"]
             log10_score += (read_quality / -phred_scale + self.scoring["clipping_penalty"]) * (aln.cigartuples[-1][1])
+
+        # print(aln.locus)
+        # for key in sorted(penalties):
+        #     print("{:>20}  {:>6.2f}".format(key, penalties[key]))
+        log10_score = sum(penalties.values())
 
         if add_tag:
             aln.set_tag(TAG_END_SCORE, str(log10_score))
@@ -181,8 +198,8 @@ class MAPQCalculator(object):
         score1 = self.get_alignment_end_score(read_pair.read1)
         score2 = self.get_alignment_end_score(read_pair.read2)
 
-        # if not read_pair.concordant():
-        #     return score1 + score2 + self.scoring["discordant_penalty"]
+        if not read_pair.concordant(read_stats):
+            return score1 + score2 + self.scoring["discordant_penalty"]
 
         # this is a probability
         insert_size_prob = read_stats.scoreInsertSize(read_pair.insert_size)

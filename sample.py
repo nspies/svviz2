@@ -10,41 +10,7 @@ import mapq
 
 logger = logging.getLogger(__name__)
 
-def set_illumina_params(bwa):
-    bwa.SetMinSeedLength(19)
-    bwa.SetMinChainWeight(0)
 
-    bwa.SetGapOpen(6)
-    bwa.SetGapExtension(1)
-    bwa.SetMismatchPenalty(4)
-    bwa.Set3primeClippingPenalty(5)
-    bwa.Set5primeClippingPenalty(5)
-
-    bwa.SetReseedTrigger(1.5)
-
-def set_pacbio_params(bwa):
-    bwa.SetMinSeedLength(17)
-    bwa.SetMinChainWeight(40)
-
-    bwa.SetGapOpen(1)
-    bwa.SetGapExtension(1)
-    bwa.SetMismatchPenalty(1)
-    bwa.Set3primeClippingPenalty(0)
-    bwa.Set5primeClippingPenalty(0)
-
-    bwa.SetReseedTrigger(10)
-
-def set_minion_params(bwa):
-    bwa.SetMinSeedLength(14)
-    bwa.SetMinChainWeight(20)
-
-    bwa.SetGapOpen(1)
-    bwa.SetGapExtension(1)
-    bwa.SetMismatchPenalty(1)
-    bwa.Set3primeClippingPenalty(0)
-    bwa.Set5primeClippingPenalty(0)
-
-    bwa.SetReseedTrigger(10)
 
 
 class Sample(object):
@@ -64,7 +30,7 @@ class Sample(object):
         if self.read_statistics.orientations == "any":
             self.single_ended = True
 
-        self._sequencer = "illumina"
+        self.sequencer = "illumina"
         if self.single_ended:
             mismatches = numpy.mean(self.read_statistics.number_mismatches)
             lengths = numpy.mean(self.read_statistics.readLengths)
@@ -74,11 +40,11 @@ class Sample(object):
             # two platforms anymore, but they do correspond to the presets that
             # bwa mem has, which we're mimicking
             if mismatch_rate > 0.10:
-                self._sequencer = "minion"
+                self.sequencer = "minion"
             elif mismatch_rate > 0.01:
-                self._sequencer = "pacbio"
+                self.sequencer = "pacbio"
 
-        print("ALIGNMENT PARAMS:::", self._sequencer)
+        print("ALIGNMENT PARAMS:::", self.sequencer)
 
 
     @property
@@ -92,14 +58,14 @@ class Sample(object):
                 sys.exit(0)
         return self._bam
 
-    def set_bwa_params(self, realigner):
-        for bwa in [realigner.ref_mapper, realigner.alt_mapper]:
-            if self._sequencer == "illumina":
-                set_illumina_params(bwa)
-            elif self._sequencer == "pacbio":
-                set_pacbio_params(bwa)
-            elif self._sequencer == "minion":
-                set_minion_params(bwa)
+    # def set_bwa_params(self, realigner):
+    #     for bwa in [realigner.ref_mapper, realigner.alt_mapper]:
+    #         if self._sequencer == "illumina":
+    #             set_illumina_params(bwa)
+    #         elif self._sequencer == "pacbio":
+    #             set_pacbio_params(bwa)
+    #         elif self._sequencer == "minion":
+    #             set_minion_params(bwa)
 
 
     def __getstate__(self):
@@ -133,6 +99,23 @@ class ReadStatistics(object):
         except Exception as e:
             logger.error("Error determining orientation / pairing statistics: {}".format(e))
 
+
+    def score_read_pair(self, pair):
+        if not pair.concordant(self):
+            pair.score = pair.aln1.score + pair.aln2.score + -10
+            return
+
+        insert_size_prob = self.scoreInsertSize(pair.insert_size)
+
+        with numpy.errstate(divide="ignore"):
+            log10_pair_prob = numpy.log10(insert_size_prob) + pair.aln1.score + pair.aln2.score
+
+        # print("PAIR:", score1, score2, pair_prob, prob_to_phred(pair_prob, 10))
+        # print(pair_prob, prob_to_phred(pair_prob, 10))
+
+        # return log10_pair_prob
+
+        pair.score = log10_pair_prob
 
     def scoreInsertSize(self, isize):
         if not self.hasInsertSizeDistribution():

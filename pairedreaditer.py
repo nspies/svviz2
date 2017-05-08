@@ -1,6 +1,6 @@
 import pysam
 
-from alignment import Alignment, PairAlignment
+from new_realignment import Alignment#, ReadPair
 
 BAM_CHARD_CLIP = 5
 
@@ -76,16 +76,17 @@ class PairedReadIter(object):
         assert pair[0].is_read1 != pair[1].is_read1
         self.found_ids.add(pair[0].query_name)
         
-        pair = [Alignment(read) for read in pair]
-        if pair[0].is_read2:
-            pair = pair[::-1]
-        pair = PairAlignment(pair[0], pair[1])
+        # pair = [Alignment(read) for read in pair]
+        read1, read2 = Alignment(pair[0]), Alignment(pair[1])
+        if read1.is_read2:
+            read1, read2 = read2, read1
+        # pair = ReadPair(pair[0], pair[1])
 
-        if set(pair.read1.query_sequence) == set("N"):
+        if set(read1.query_sequence) == set("N"):
             self.N_count += 1
-        elif set(pair.read2.query_sequence) == set("N"):
+        elif set(read2.query_sequence) == set("N"):
             self.N_count += 1
-        return pair
+        return read1, read2
 
     def find_pairs(self):
         for name in list(self.unpaired_reads.keys()):

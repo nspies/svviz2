@@ -20,75 +20,86 @@ def match_chrom_format(chrom, keys):
         return chrom2
     return chrom
 
+from new_realignment import GenomeSource, FastaGenomeSource
 
-class GenomeSource(object):
-    """
-    this is a uniform interface to a reference genome, either on disk eg a FastaGenomeSource,
-    or in memory (this GenomeSource class)
-    """
-    def __init__(self, names_to_contigs):
-        self.names_to_contigs = collections.OrderedDict(names_to_contigs)
+# class GenomeSource(object):
+#     """
+#     this is a uniform interface to a reference genome, either on disk eg a FastaGenomeSource,
+#     or in memory (this GenomeSource class)
+#     """
+#     def __init__(self, names_to_contigs):
+#         self.names_to_contigs = collections.OrderedDict(names_to_contigs)
+#         self._bwa = None
 
-    def get_chrom_by_id(self, chrom_id):
-        return list(self.names_to_contigs.keys())[chrom_id]
+#     def get_chrom_by_id(self, chrom_id):
+#         return list(self.names_to_contigs.keys())[chrom_id]
 
-    def get_seq(self, chrom, start, end, strand):
-        seq = self.names_to_contigs[chrom][start:end+1]
-        if strand == "-":
-            seq = utilities.reverse_comp(seq)
-        return seq
+#     def get_seq(self, chrom, start, end, strand):
+#         seq = self.names_to_contigs[chrom][start:end+1]
+#         if strand == "-":
+#             seq = utilities.reverse_comp(seq)
+#         return seq
 
-    def get_bwa(self):
-        """
-        pacbio: -k17 -W40 -r10 -A1 -B1 -O1 -E1 -L0  (PacBio reads to ref)
-        ont2d: -k14 -W20 -r10 -A1 -B1 -O1 -E1 -L0  (Oxford Nanopore 2D-reads to ref)
-        """
-        bwa = seqlib.BWAWrapper()
-        bwa.makeIndex(self.names_to_contigs)
+#     def get_bwa(self):
+#         """
+#         pacbio: -k17 -W40 -r10 -A1 -B1 -O1 -E1 -L0  (PacBio reads to ref)
+#         ont2d: -k14 -W20 -r10 -A1 -B1 -O1 -E1 -L0  (Oxford Nanopore 2D-reads to ref)
+#         """
+#         if self._bwa is None:
+#             self._bwa = seqlib.BWAWrapper()
+#             self._bwa.makeIndex(self.names_to_contigs)
 
-        return bwa
+#         return self._bwa
+
+#     def __getstate__(self):
+#         state = self.__dict__.copy()
+#         state["_bwa"] = None
+#         return state
 
 
-class FastaGenomeSource(GenomeSource):
-    """ pickle-able wrapper for pyfaidx.Fasta """
-    def __init__(self, path):
-        self.path = path
-        self._fasta = None
+# class FastaGenomeSource(GenomeSource):
+#     """ pickle-able wrapper for pyfaidx.Fasta """
+#     def __init__(self, path):
+#         self.path = path
+#         self._fasta = None
+#         self._bwa = None
 
-    def get_chrom_by_id(self, chrom_id):
-        return list(self.fasta.keys())[chrom_id]
+#     def get_chrom_by_id(self, chrom_id):
+#         return list(self.fasta.keys())[chrom_id]
         
-    def get_seq(self, chrom, start, end, strand):
-        chrom = match_chrom_format(chrom, list(self.fasta.keys()))
+#     def get_seq(self, chrom, start, end, strand):
+#         chrom = match_chrom_format(chrom, list(self.fasta.keys()))
 
-        seq = self.fasta[chrom][start:end+1]
-        if strand == "-":
-            seq = utilities.reverse_comp(seq)
-        return seq
+#         seq = self.fasta[chrom][start:end+1]
+#         if strand == "-":
+#             seq = utilities.reverse_comp(seq)
+#         return seq
 
-    @property
-    def fasta(self):
-        if self._fasta is None:
-            self._fasta = pyfaidx.Fasta(self.path, as_raw=True)
-        return self._fasta
+#     @property
+#     def fasta(self):
+#         if self._fasta is None:
+#             self._fasta = pyfaidx.Fasta(self.path, as_raw=True)
+#         return self._fasta
 
-    def get_bwa(self):
-        logger.info("Loading bwa index...")
-        
-        bwa = seqlib.BWAWrapper()
-        bwa.loadIndex(self.path)
-        
-        logger.info("Loading bwa index done.")
+#     def get_bwa(self):
+#         if self._bwa is None:
+#             logger.info("Loading bwa index...")
+            
+#             self._bwa = seqlib.BWAWrapper()
+#             self._bwa.loadIndex(self.path)
+            
+#             logger.info("Loading bwa index done.")
 
-        return bwa
+#         return self._bwa
 
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state["_fasta"] = None
-        return state
+#     def __getstate__(self):
+#         state = self.__dict__.copy()
+#         state["_fasta"] = None
+#         state["_bwa"] = None
+#         return state
 
-def make_genome_source(ref_path=None, ref_seqs=None):
-    if ref_path is not None:
-        return FastaGenomeSource(ref_path)
-    else:
-        return GenomeSource(ref_seqs)
+# def make_genome_source(ref_path=None, ref_seqs=None):
+#     if ref_path is not None:
+#         return FastaGenomeSource(ref_path)
+#     else:
+#         return GenomeSource(ref_seqs)

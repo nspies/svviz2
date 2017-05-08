@@ -52,11 +52,16 @@ class DataHub(object):
 
     def set_cur_variant(self, variant):
         self.variant = variant
-        ref_genome_source = genomesource.GenomeSource(self.variant.seqs("ref"))
-        self.realigner.set_ref_genome_source(ref_genome_source)
 
-        alt_genome_source = genomesource.GenomeSource(self.variant.seqs("alt"))
-        self.realigner.set_alt_genome_source(alt_genome_source)
+        local_coords_in_full_genome = self.variant.search_regions(self.align_distance)
+        self.genome.blacklist = local_coords_in_full_genome
+        
+        self.local_ref_genome_source = genomesource.GenomeSource(self.variant.seqs("ref"))
+        # local_coords_in_full_genome = self.variant.search_regions(self.align_distance)
+        # self.realigner.set_local_ref_genome(ref_genome_source, local_coords_in_full_genome)
+
+        self.local_alt_genome_source = genomesource.GenomeSource(self.variant.seqs("alt"))
+        # self.realigner.set_local_alt_genome(alt_genome_source)
 
         # TODO: fix this...
         for sample_name, sample in self.samples.items():

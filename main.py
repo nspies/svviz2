@@ -2,10 +2,11 @@ import logging
 import sys
 import time
 
-import alignment
+from new_realignment import ReadPair
+# import alignment
 import commandline
 import genotyping
-import realignment
+# import realignment
 import pairedreaditer
 import utilities
 import variants
@@ -23,35 +24,37 @@ def get_datahub():
     datahub.set_args(args)
     datahub.align_distance = 1000
     for sample_name, sample in datahub.samples.items():
-        sample.search_distance = 2400
-    datahub.realigner = realignment.Realigner(datahub.genome)
+        sample.search_distance = 240
+    # datahub.realigner = realignment.Realigner(datahub.genome)
 
     return datahub
 
 def get_read_batch(sample, datahub):
     if sample.single_ended:
-        yield from get_reads_unpaired(sample, datahub)
+        for batch in get_reads_unpaired(sample, datahub):
+            yield batch
     else:
-        yield from get_read_pairs(sample, datahub)
+        for batch in get_read_pairs(sample, datahub):
+            yield [ReadPair(read1, read2, sample.read_statistics) for (read1, read2) in batch]
 
-def get_reads_unpaired(sample, datahub):
-    logger.info("Loading more reads...")
-    cur_reads = []
-    search_regions = datahub.variant.search_regions(sample.search_distance)
+# def get_reads_unpaired(sample, datahub):
+#     logger.info("Loading more reads...")
+#     cur_reads = []
+#     search_regions = datahub.variant.search_regions(sample.search_distance)
 
-    for region in search_regions:
-        chrom, start, end = region.chrom, region.start, region.end
-        for read in sample.bam.fetch(chrom, start, end):
-            # if read.query_name != "m150105_192231_42177R_c100761782550000001823161607221526_s1_p0/138972/39862_46995":
-            #     continue
+#     for region in search_regions:
+#         chrom, start, end = region.chrom, region.start, region.end
+#         for read in sample.bam.fetch(chrom, start, end):
+#             # if read.query_name != "m150105_192231_42177R_c100761782550000001823161607221526_s1_p0/138972/39862_46995":
+#             #     continue
 
-            cur_reads.append(alignment.Alignment(read))
-            if datahub.args.batch_size is not None and len(cur_reads) >= datahub.args.batch_size:
-                yield cur_reads
-                logger.info("Loading more reads...")
-                cur_reads = []
+#             cur_reads.append(alignment.Alignment(read))
+#             if datahub.args.batch_size is not None and len(cur_reads) >= datahub.args.batch_size:
+#                 yield cur_reads
+#                 logger.info("Loading more reads...")
+#                 cur_reads = []
 
-    yield cur_reads
+#     yield cur_reads
 
 
 
@@ -66,17 +69,6 @@ def get_read_pairs(sample, datahub):
     paired_read_iter = pairedreaditer.PairedReadIter(sample.bam, search_regions)
 
     for read_pair in paired_read_iter:
-        if read_pair.query_name == "HA2WPADXX:19:5:1605415:0":
-            print("!"*30)
-            print(read_pair.read1._read)
-            print(read_pair.read2._read)
-            print("!"*30)
-            import genomesource
-            g = genomesource.FastaGenomeSource("/Volumes/frida/nspies/data/bwa-hg19/hg19.fasta")
-            realigner = realignment.Realigner(g)
-            realigner.set_alt_genome_source(g)
-            realigner.realign_pair(read_pair, sample.read_statistics)
-
         cur_read_pairs.append(read_pair)
         if datahub.args.batch_size is not None and len(cur_read_pairs) >= datahub.args.batch_size:
             yield cur_read_pairs
@@ -94,23 +86,38 @@ def map_realign(batch, realigner, sample):
     else:
         return map_realign_pairs(batch, realigner, sample)
 
-def map_realign_pairs(batch, realigner, sample):
-    results = []
-    for pair in batch:
-        realigned_pair = realigner.realign_pair(pair, sample.read_statistics)
-        results.append(realigned_pair)
+def map_realign_pairs(batch, datahub, sample):
+    ref_genome_sources = [datahub.genome, datahub.local_ref_genome_source]
+    alt_genome_sources = [datahub.local_alt_genome_source]
 
-    return results
+    for genome_source in ref_genome_sources+alt_genome_sources:
+        genome_source.set_aligner_params(sample.sequencer)
 
-def map_realign_unpaired(batch, realigner):
     import tqdm
-    results = []
-    # for read in tqdm.tqdm(batch):
-    for read in batch:
-        realigned = realigner.realign_single_end(read)
-        results.append(realigned)
+    for pair in batch:
+    # for pair in tqdm.tqdm(batch):
+        # if pair.name == "ST-E00130:359:HGV3HCCXX:1:1202:6573:53979":
+        pair.realign(ref_genome_sources, alt_genome_sources)
 
-    return results
+    return batch
+
+# def map_realign_pairs(batch, realigner, sample):
+#     results = []
+#     for pair in batch:
+#         realigned_pair = realigner.realign_pair(pair, sample.read_statistics)
+#         results.append(realigned_pair)
+
+#     return results
+
+# def map_realign_unpaired(batch, realigner):
+#     import tqdm
+#     results = []
+#     # for read in tqdm.tqdm(batch):
+#     for read in batch:
+#         realigned = realigner.realign_single_end(read)
+#         results.append(realigned)
+
+#     return results
 
 
 def save_realignments(aln_sets, sample, datahub):
@@ -123,17 +130,18 @@ def save_realignments(aln_sets, sample, datahub):
             if sample.single_ended:
                 sample.out_ref_bam.write(aln_set.supporting_aln._read)
             else:
-                sample.out_ref_bam.write(aln_set.supporting_aln.read1)
-                sample.out_ref_bam.write(aln_set.supporting_aln.read2)
+                sample.out_ref_bam.write(aln_set.supporting_aln.aln1._read)
+                sample.out_ref_bam.write(aln_set.supporting_aln.aln2._read)
 
         elif aln_set.supports_allele == "alt":
             if sample.single_ended:
                 sample.out_alt_bam.write(aln_set.supporting_aln._read)
             else:
-                sample.out_alt_bam.write(aln_set.supporting_aln.read1)
-                sample.out_alt_bam.write(aln_set.supporting_aln.read2)
+                sample.out_alt_bam.write(aln_set.supporting_aln.aln1._read)
+                sample.out_alt_bam.write(aln_set.supporting_aln.aln2._read)
 
-
+    sample.out_alt_bam.close()
+    sample.out_ref_bam.close()
 
 
 def genotype_variant(datahub):
@@ -141,7 +149,8 @@ def genotype_variant(datahub):
         ref_count = 0
         alt_count = 0
 
-        sample.set_bwa_params(datahub.realigner)
+        # sample.set_bwa_params(datahub.realigner)
+
 
         for batch in get_read_batch(sample, datahub):
             if sample.single_ended:
@@ -149,7 +158,8 @@ def genotype_variant(datahub):
             else:
                 logger.info("Analyzing {} read pairs".format(len(batch)))
 
-            aln_sets = map_realign(batch, datahub.realigner, sample)
+            aln_sets = map_realign(batch, datahub, sample)
+            # aln_sets = map_realign(batch, datahub.realigner, sample)
 
             cur_ref_count, cur_alt_count = genotyping.assign_reads_to_alleles(
                 aln_sets,

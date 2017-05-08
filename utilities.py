@@ -70,6 +70,12 @@ def overlaps(locus, other_loci):
             return True
     return False
 
+def overlap_many(loci, other_loci):
+    for locus in loci:
+        if overlaps(locus, other_loci):
+            return True
+    return False
+
 class Locus:
     """ An all-purpose genomic locus class; use for any kind of datum that can be represented
     with a chromosome, start, end, and strand """

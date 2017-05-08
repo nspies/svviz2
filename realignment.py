@@ -2,12 +2,13 @@ import time
 
 from alignment import MultiReferenceReadEndAlignmentSet, MultiReferenceAlignmentSet
 import mapq
-
+import combinedreference
 
 class Realigner(object):
     def __init__(self, ref_genome_source, breakpoints=None):
         self.ref_genome_source = ref_genome_source
-        self.alt_seqs = None
+        self.local_ref_genome = None
+        self.local_alt_genome = None
         self.breakpoints = breakpoints
 
         self._ref_mapper = None
@@ -114,13 +115,18 @@ class Realigner(object):
     @property
     def ref_mapper(self):
         if self._ref_mapper is None:
-            self._ref_mapper = self.ref_genome_source.get_bwa()
+            # self._ref_mapper = self.ref_genome_source.get_bwa()
+            self._ref_mapper = combinedreference.CombinedAligner(
+                self.ref_genome_source,
+                self.local_ref_genome,
+                self.local_coords_in_full_genome
+                )
         return self._ref_mapper
 
     @property
     def alt_mapper(self):
         if self._alt_mapper is None:
-            self._alt_mapper = self.alt_genome_source.get_bwa()
+            self._alt_mapper = self.local_alt_genome.get_bwa()
         return self._alt_mapper
 
     @property
@@ -135,13 +141,14 @@ class Realigner(object):
             self._alt_mapq_calculator = mapq.MAPQCalculator(self.alt_genome_source)
         return self._alt_mapq_calculator
 
-    def set_alt_genome_source(self, alt_genome_source):
-        self.alt_genome_source = alt_genome_source
+    def set_local_alt_genome(self, local_alt_genome_source):
+        self.local_alt_genome = local_alt_genome_source
         self._alt_mapper = None
         self._alt_mapq_calculator = None
 
-    def set_ref_genome_source(self, ref_genome_source):
-        self.ref_genome_source = ref_genome_source
+    def set_local_ref_genome(self, local_ref_genome_source, local_coords_in_full_genome):
+        self.local_ref_genome = local_ref_genome_source
+        self.local_coords_in_full_genome = local_coords_in_full_genome
         self._ref_mapper = None
         self._ref_mapq_calculator = None
 
