@@ -96,7 +96,7 @@ def map_realign_pairs(batch, datahub, sample):
     import tqdm
     for pair in batch:
     # for pair in tqdm.tqdm(batch):
-        # if pair.name == "ST-E00130:359:HGV3HCCXX:1:1202:6573:53979":
+        # if pair.name == "ST-E00130:359:HGV3HCCXX:1:1120:26098:65265":
         pair.realign(ref_genome_sources, alt_genome_sources)
 
     return batch
@@ -145,12 +145,14 @@ def save_realignments(aln_sets, sample, datahub):
 
 
 def genotype_variant(datahub):
+    temp_storage = {}
+
     for sample_name, sample in datahub.samples.items():
         ref_count = 0
         alt_count = 0
 
         # sample.set_bwa_params(datahub.realigner)
-
+        temp_storage[sample_name] = []
 
         for batch in get_read_batch(sample, datahub):
             if sample.single_ended:
@@ -164,20 +166,48 @@ def genotype_variant(datahub):
             cur_ref_count, cur_alt_count = genotyping.assign_reads_to_alleles(
                 aln_sets,
                 variants.get_breakpoints_on_local_reference(datahub.variant, "ref"),
-                variants.get_breakpoints_on_local_reference(datahub.variant, "alt"))
+                variants.get_breakpoints_on_local_reference(datahub.variant, "alt"),
+                sample.read_statistics)
             ref_count += cur_ref_count
             alt_count += cur_alt_count
 
             save_realignments(aln_sets, sample, datahub)
 
-        print("REF:", ref_count, "ALT:", alt_count) 
+            temp_storage[sample_name].extend(aln_sets)
+
+        print("REF:", ref_count, "ALT:", alt_count)
+
+    return temp_storage
+
+def visualize(datahub, temp_storage):
+    import export, track
+    for sample_name, sample in datahub.samples.items():
+        sample.tracks = {}
+        for allele in ["alt", "ref"]:
+            cur_alns = [aln.supporting_aln for aln in temp_storage[sample_name] if aln.supports_allele==allele]
+            sample.tracks[allele] = track.Track(
+                datahub.variant.chrom_parts(allele), cur_alns, 3000, 4000, datahub.variant, allele, False, True)
+
+        for allele in ["alt", "ref"]:
+            axis = track.Axis(sample.tracks[allele].scale, datahub.variant, allele)
+            datahub.alleleTracks[allele]["axis"] = axis
+
+    e = export.TrackCompositor(datahub)
+    
+    with open("temp.pdf", "wb") as outf:
+        d = export.convertSVG(e.render(), "pdf", "webkittopdf")
+        print(d[:100])
+        outf.write(d)
 
 
 def run(datahub):
     """ this runs the app on the provided datahub """
     for variant in datahub.get_variants():
-        genotype_variant(datahub)
-        afgjhkl()
+        t0 = time.time()
+        temp_storage = genotype_variant(datahub)
+        t1 = time.time()
+        print("TIME:::", t1-t0)
+        visualize(datahub, temp_storage)
 
 def main():
     """ entry point from command line """

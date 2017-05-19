@@ -27,7 +27,7 @@ class ReadPair(object):
         self.ref_pairs = []
         self.alt_pairs = []
 
-        self.chosen_alignment_pair = None
+        # self.chosen_alignment_pair = None
 
         self.read_stats = read_stats
 
@@ -75,9 +75,9 @@ class ReadPair(object):
         # print("///")
 
 
-        if len(self.ref_pairs)+len(self.alt_pairs) > 0:
-            self.chosen_alignment_pair = max(self.ref_pairs+self.alt_pairs, 
-                                             key=lambda x: x.score)
+        # if len(self.ref_pairs)+len(self.alt_pairs) > 0:
+        #     self.chosen_alignment_pair = max(self.ref_pairs+self.alt_pairs, 
+        #                                      key=lambda x: x.score)
 
 
 ATTRIBS = ["query_name",
@@ -121,12 +121,12 @@ class Alignment(object):
         start = self._read.reference_start
         end = self._read.reference_end
 
-        if self.cigartuples[0][0] == 4:
-            start += self.cigartuples[0][1]
-        if self.cigartuples[-1][0] == 4:
-            end -= self.cigartuples[-1][1]
+        # if self.cigartuples[0][0] == 4:
+        #     start += self.cigartuples[0][1]
+        # if self.cigartuples[-1][0] == 4:
+        #     end -= self.cigartuples[-1][1]
 
-        locus = utilities.Locus(chrom, start, end, "+")
+        locus = utilities.Locus(chrom, start, end, "-" if self.is_reverse else "+")
 
         return locus
 

@@ -50,7 +50,7 @@ class MAPQCalculator(object):
             "phred_scale": 10.0,
 
             "min_base_quality": 0,
-            "max_base_quality": 5
+            "max_base_quality": 10
         }
 
         self.rescale_base_qualities = True
@@ -68,6 +68,7 @@ class MAPQCalculator(object):
 
         return qualities
 
+    # @profile
     def get_alignment_end_score(self, aln, add_tag=True):
         if aln.has_tag(TAG_END_SCORE):
             return float(aln.get_tag(TAG_END_SCORE))
@@ -91,13 +92,14 @@ class MAPQCalculator(object):
         clip_left_adjust =  min(1.0, aln.cigartuples[0][1] / self.scoring["min_clip_length"])
         clip_right_adjust = min(1.0, aln.cigartuples[-1][1] / self.scoring["min_clip_length"])
 
-        # print(aln.cigartuples, clip_left_adjust, clip_right_adjust)
         penalties = collections.defaultdict(int)
 
+        query_sequence = aln.query_sequence
+        query_end = aln.query_alignment_start+aln.query_alignment_length
         for read_pos, ref_pos in aln.get_aligned_pairs():#matches_only=True):
             read_seq = None
             if read_pos is not None:
-                read_seq = aln.query_sequence[read_pos]
+                read_seq = query_sequence[read_pos]
                 read_quality = qualities[read_pos]
 
             cur_ref_seq = None
@@ -110,7 +112,7 @@ class MAPQCalculator(object):
 
             if i < aln.query_alignment_start:
                 penalties["clip_left"] += (clip_left_adjust) * (read_quality / -phred_scale + self.scoring["clipping_penalty"])
-            elif i >= aln.query_alignment_start+aln.query_alignment_length:
+            elif i >= query_end:
                 penalties["clip_right"] += (clip_right_adjust) * (read_quality / -phred_scale + self.scoring["clipping_penalty"])
             elif read_seq is None:
                 # deletion
@@ -149,9 +151,14 @@ class MAPQCalculator(object):
             # log10_score += read_quality / -phred_scale + self.scoring["gap_open"]
             log10_score += (read_quality / -phred_scale + self.scoring["clipping_penalty"]) * (aln.cigartuples[-1][1])
 
+        # print("*"*23)
+        # print("ADJUST:", aln.cigartuples, clip_left_adjust, clip_right_adjust)
+        # print("GOOD:", prob_to_phred(1 - phred_to_prob(max(qualities), self.scoring["phred_scale"]), -1))
+        # print("BAD:", max(qualities) / -phred_scale + self.scoring["mismatch"])
         # print(aln.locus)
         # for key in sorted(penalties):
         #     print("{:>20}  {:>6.2f}".format(key, penalties[key]))
+
         log10_score = sum(penalties.values())
 
         if add_tag:

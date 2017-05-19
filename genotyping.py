@@ -48,7 +48,7 @@ def calculate_genotype_likelihoods(ref, alt, priors=[0.05, 0.5, 0.95], max_qual=
     return log_probs, phred_genotype_qualities
 
 
-def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_collection):
+def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_collection, read_stats):
     def get_best_score(_aln_set, _allele):
         # alignments = _aln_set.get_alns(_allele)
         if _allele == "ref":
@@ -87,6 +87,8 @@ def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_
         if ref_score - alt_score > 1:
             # aln = aln_set.get_alns("ref")[0]
             aln = aln_set.ref_pairs[0]
+            if not aln.concordant(read_stats):
+                continue
             if utilities.overlap_many(aln.loci, ref_breakpoint_collection):
                 # if aln_set.name == "ST-E00130:359:HGV3HCCXX:1:1212:21917:44028":
                 #     print(">>>")
@@ -99,6 +101,13 @@ def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_
                 ref_total += aln_set.support_prob
         elif alt_score - ref_score > 1:
             aln = aln_set.alt_pairs[0]
+            if not aln.concordant(read_stats):
+                continue
+                # print("a")
+                # print(" ", [(x.loci, x.score, x.aln1.cigarstring, x.aln2.cigarstring) for x in aln_set.alt_pairs])
+                # print(" ", [(x.loci, x.score, x.aln1.cigarstring, x.aln2.cigarstring) for x in aln_set.ref_pairs])
+
+
             # print(ref_score, alt_score)
             # print(aln.locus, alt_breakpoint_collection)
             # aln = aln_set.get_alns("alt")[0]

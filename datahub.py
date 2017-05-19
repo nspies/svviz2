@@ -34,6 +34,8 @@ class DataHub(object):
         self.align_distance = 0
         self.samples = collections.OrderedDict()
         self.genome = None
+
+        self.alleleTracks = collections.defaultdict(collections.OrderedDict)
         # self.annotationSets = collections.OrderedDict()
 
 
