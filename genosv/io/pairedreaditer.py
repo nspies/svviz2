@@ -13,7 +13,7 @@ class PairedReadIter(object):
         max_unpaired_reads - when we've found this many unpaired reads, 
             we'll start looking elsewhere in the genome for the mates
         downsampleTarget - this option will reduce memory and processing time 
-            at the expensive of a second trip through the file; basically,
+            at the expense of a second trip through the file; basically,
             we'll first count how many reads there are total in regions,
             then we'll calculate a probability which we'll use to determine
             which reads we pass along and which we discard

@@ -108,6 +108,8 @@ class Alignment(object):
         return self.query_sequence
 
     def original_qualities(self):
+        if self.query_qualities is None:
+            return None
         if self.is_reverse:
             return self.query_qualities[::-1]
         return self.query_qualities
@@ -337,7 +339,7 @@ class GenomeSource(object):
 
         for aln in self.bwa.align(read.original_sequence(), hardclip=False):
             aln = Alignment(aln)
-            if aln.is_reverse:
+            if aln.is_reverse and qualities is not None:
                 aln._read.query_qualities = qualities[::-1]
             else:
                 aln._read.query_qualities = qualities
