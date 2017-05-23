@@ -3,9 +3,9 @@ import logging
 import pyfaidx
 import pysam
 
-import mapq
 import seqlib
-import utilities
+from genosv.utility import misc
+from genosv.remap import mapq
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ class Alignment(object):
 
     def original_sequence(self):
         if self.is_reverse:
-            return utilities.reverse_comp(self.query_sequence)
+            return misc.reverse_comp(self.query_sequence)
         return self.query_sequence
 
     def original_qualities(self):
@@ -126,7 +126,7 @@ class Alignment(object):
         # if self.cigartuples[-1][0] == 4:
         #     end -= self.cigartuples[-1][1]
 
-        locus = utilities.Locus(chrom, start, end, "-" if self.is_reverse else "+")
+        locus = misc.Locus(chrom, start, end, "-" if self.is_reverse else "+")
 
         return locus
 
@@ -184,7 +184,7 @@ class AlignmentPair(object):
             chrom = self.aln1.chrom
             start = min(self.aln1.reference_start, self.aln2.reference_start)
             end = max(self.aln1.reference_end, self.aln2.reference_end)
-            locus = utilities.Locus(chrom, start, end, "+")
+            locus = misc.Locus(chrom, start, end, "+")
 
             return [locus]
         else:
@@ -324,7 +324,7 @@ class GenomeSource(object):
     def get_seq(self, chrom, start, end, strand):
         seq = self.names_to_contigs[chrom][start:end+1]
         if strand == "-":
-            seq = utilities.reverse_comp(seq)
+            seq = misc.reverse_comp(seq)
         return seq
 
     def keys(self):
@@ -344,7 +344,7 @@ class GenomeSource(object):
 
             aln.chrom = self.keys()[aln.reference_id]
 
-            if self.blacklist is None or not utilities.overlaps(aln.locus, self.blacklist):
+            if self.blacklist is None or not misc.overlaps(aln.locus, self.blacklist):
                 aln.source = self
                 aln.chrom = self.keys()[aln.reference_id]
                 self.score_alignment(aln)
@@ -414,7 +414,7 @@ class FastaGenomeSource(GenomeSource):
 
         seq = self.fasta[chrom][start:end+1]
         if strand == "-":
-            seq = utilities.reverse_comp(seq)
+            seq = misc.reverse_comp(seq)
         return seq
 
     def keys(self):

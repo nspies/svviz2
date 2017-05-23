@@ -2,8 +2,8 @@ import collections
 import logging
 
 # from svviz.utilities import Locus, getListDefault
-import genomesource
-from utilities import Locus
+# import genomesource
+from genosv.utility.misc import Locus
 
 
 def non_negative(x):

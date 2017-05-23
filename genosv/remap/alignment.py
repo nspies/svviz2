@@ -1,7 +1,7 @@
 import collections
 import pysam
 
-import utilities
+from genosv.utility import misc
 
 
 ATTRIBS = ["query_name",
@@ -44,7 +44,7 @@ class Alignment(object):
 
     def original_sequence(self):
         if self.is_reverse:
-            return utilities.reverse_comp(self.query_sequence)
+            return misc.reverse_comp(self.query_sequence)
         return self.query_sequence
 
     def original_qualities(self):
@@ -59,7 +59,7 @@ class Alignment(object):
             chrom = self.source.get_chrom_by_id(self._read.reference_id)
         start = self._read.reference_start
         end = self._read.reference_end
-        locus = utilities.Locus(chrom, start, end, "+")
+        locus = misc.Locus(chrom, start, end, "+")
 
         return locus
 
@@ -128,7 +128,7 @@ class PairAlignment(object):
             chrom = self.source.get_chrom_by_id(self.read1.reference_id)
         start = min(self.read1.reference_start, self.read2.reference_start)
         end = max(self.read1.reference_end, self.read2.reference_end)
-        locus = utilities.Locus(chrom, start, end, "+")
+        locus = misc.Locus(chrom, start, end, "+")
 
         return locus
         

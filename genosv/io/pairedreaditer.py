@@ -1,6 +1,6 @@
 import pysam
 
-from new_realignment import Alignment#, ReadPair
+from genosv.remap.new_realignment import Alignment#, ReadPair
 
 BAM_CHARD_CLIP = 5
 

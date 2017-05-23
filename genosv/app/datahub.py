@@ -6,9 +6,10 @@ import sys
 
 # from svviz import annotations
 # from svviz import gff
-import genomesource
-from sample import Sample
-import vcfparser
+#import genomesource
+from genosv.remap.new_realignment import GenomeSource, FastaGenomeSource
+from genosv.app.sample import Sample
+from genosv.io import vcfparser
 
 logger = logging.getLogger(__name__)
 
@@ -58,11 +59,11 @@ class DataHub(object):
         local_coords_in_full_genome = self.variant.search_regions(self.align_distance)
         self.genome.blacklist = local_coords_in_full_genome
         
-        self.local_ref_genome_source = genomesource.GenomeSource(self.variant.seqs("ref"))
+        self.local_ref_genome_source = GenomeSource(self.variant.seqs("ref"))
         # local_coords_in_full_genome = self.variant.search_regions(self.align_distance)
         # self.realigner.set_local_ref_genome(ref_genome_source, local_coords_in_full_genome)
 
-        self.local_alt_genome_source = genomesource.GenomeSource(self.variant.seqs("alt"))
+        self.local_alt_genome_source = GenomeSource(self.variant.seqs("alt"))
         # self.realigner.set_local_alt_genome(alt_genome_source)
 
         # TODO: fix this...
@@ -87,7 +88,7 @@ class DataHub(object):
     def set_args(self, args):
         self.args = args
 
-        self.genome = genomesource.FastaGenomeSource(args.ref)
+        self.genome = FastaGenomeSource(args.ref)
 
         for bamPath in self.args.bam:
             name = name_from_bam_path(bamPath)

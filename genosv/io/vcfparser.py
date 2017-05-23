@@ -2,8 +2,8 @@ import logging
 import pysam
 import re
 
-import utilities
-import variants
+from genosv.utility.misc import Locus
+from genosv.app import variants
 
 logger = logging.getLogger(__name__)
 
@@ -119,8 +119,8 @@ def parse_breakend(record1, record2, datahub):
         return None
 
     # convert from 1-based to 0-based coordinates
-    breakpoint1 = utilities.Locus(chrom, pos-1, pos-1, orientation[0])
-    breakpoint2 = utilities.Locus(other_chrom, other_pos-1, other_pos-1, orientation[1])
+    breakpoint1 = Locus(chrom, pos-1, pos-1, orientation[0])
+    breakpoint2 = Locus(other_chrom, other_pos-1, other_pos-1, orientation[1])
 
     print(breakpoint1, breakpoint2)
     return variants.Breakend(breakpoint1, breakpoint2, datahub)

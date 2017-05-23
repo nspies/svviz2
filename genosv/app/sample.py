@@ -5,8 +5,8 @@ import pysam
 import random
 import sys
 
-from kde import gaussian_kde
-import mapq
+from genosv.utility.kde import gaussian_kde
+from genosv.remap import mapq
 
 logger = logging.getLogger(__name__)
 

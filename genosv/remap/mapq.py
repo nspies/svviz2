@@ -3,7 +3,7 @@ import logging
 import numpy
 import time
 
-from alignment import Alignment, PairAlignment
+from genosv.remap.alignment import Alignment, PairAlignment
 
 logger = logging.getLogger(__name__)
 

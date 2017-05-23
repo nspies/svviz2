@@ -1,7 +1,8 @@
 import numpy
 
-import mapq
-import utilities
+
+from genosv.remap import mapq
+from genosv.utility import misc
 
 try:
     import scipy.misc
@@ -89,7 +90,7 @@ def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_
             aln = aln_set.ref_pairs[0]
             if not aln.concordant(read_stats):
                 continue
-            if utilities.overlap_many(aln.loci, ref_breakpoint_collection):
+            if misc.overlap_many(aln.loci, ref_breakpoint_collection):
                 # if aln_set.name == "ST-E00130:359:HGV3HCCXX:1:1212:21917:44028":
                 #     print(">>>")
                 #     print(aln_set.name, [(x.loci, x.mapq) for x in aln_set.ref_pairs])
@@ -111,7 +112,7 @@ def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_
             # print(ref_score, alt_score)
             # print(aln.locus, alt_breakpoint_collection)
             # aln = aln_set.get_alns("alt")[0]
-            if utilities.overlap_many(aln.loci, alt_breakpoint_collection):
+            if misc.overlap_many(aln.loci, alt_breakpoint_collection):
                 aln_set.supports_allele = "alt"
                 aln_set.support_prob = (1 - mapq.phred_to_prob(alt_score, 10.0))
                 aln_set.supporting_aln = aln

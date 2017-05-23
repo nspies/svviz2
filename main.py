@@ -2,17 +2,12 @@ import logging
 import sys
 import time
 
-from new_realignment import ReadPair
-# import alignment
-import commandline
-import genotyping
-# import realignment
-import pairedreaditer
-import utilities
-import variants
-
-from datahub import DataHub
-
+from genosv.remap.new_realignment import ReadPair
+from genosv.app import commandline
+from genosv.io import pairedreaditer
+from genosv.app import variants
+from genosv.app.datahub import DataHub
+from genosv.remap import genotyping
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +175,8 @@ def genotype_variant(datahub):
     return temp_storage
 
 def visualize(datahub, temp_storage):
-    import export, track
+    from genosv.visualize import track
+    from genosv.io import export
     for sample_name, sample in datahub.samples.items():
         sample.tracks = {}
         for allele in ["alt", "ref"]:
