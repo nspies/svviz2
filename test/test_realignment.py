@@ -5,6 +5,10 @@ import random
 def test_realignment(genome_source, genome_source_deletion, heterozygous_readpairs_deletion):
     print("")
     genome_source_deletion, deletion_length = genome_source_deletion
+
+    genome_source.aligner_type = "ssw"
+    genome_source_deletion.aligner_type = "ssw"
+
     for allele, pairs in heterozygous_readpairs_deletion.items():
         # if allele == "amb":
         sample_size = 1000

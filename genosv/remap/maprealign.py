@@ -6,15 +6,18 @@ def map_realign(batch, realigner, sample):
     return map_realign_pairs(batch, realigner, sample)
 
 def map_realign_pairs(batch, datahub, sample):
-    ref_genome_sources = [datahub.genome, datahub.local_ref_genome_source]
+    ref_genome_sources = [datahub.local_ref_genome_source]
     alt_genome_sources = [datahub.local_alt_genome_source]
 
+    if datahub.aligner_type == "bwa":
+        ref_genome_sources.append(datahub.genome)
+        
     for genome_source in ref_genome_sources+alt_genome_sources:
         genome_source.set_aligner_params(sample.sequencer)
 
     import tqdm
     # for read_or_pair in batch:
-    for read_or_pair in tqdm.tqdm(batch):
+    for read_or_pair in tqdm.tqdm(batch[:5]):
         # if read_or_pair.name == "ST-E00130:359:HGV3HCCXX:1:1120:26098:65265":
         read_or_pair.realign(ref_genome_sources, alt_genome_sources)
 

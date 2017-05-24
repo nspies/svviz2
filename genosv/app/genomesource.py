@@ -5,6 +5,7 @@ import seqlib
 
 from genosv.utility import misc
 from genosv.remap import mapq
+from genosv.remap import ssw_aligner
 from genosv.remap.alignment import Alignment
 
 logger = logging.getLogger(__name__)
@@ -57,10 +58,13 @@ PARAMS = {
 }
 
 class GenomeSource(object):
-    def __init__(self, names_to_contigs, blacklist=None):
+    def __init__(self, names_to_contigs, blacklist=None, aligner_type="bwa"):
         self.names_to_contigs = collections.OrderedDict(names_to_contigs)
         self._bwa = None
+        self._ssw = None
         self.blacklist = blacklist
+
+        self.aligner_type = aligner_type
 
     def get_seq(self, chrom, start, end, strand):
         seq = self.names_to_contigs[chrom][start:end+1]
@@ -76,7 +80,7 @@ class GenomeSource(object):
         alns = []
         qualities = read.original_qualities()
 
-        raw_alns = self.bwa.align(read.original_sequence(), hardclip=False)
+        raw_alns = self.aligner.align(read.original_sequence(), hardclip=False)
 
         for aln in raw_alns:
             aln = Alignment(aln)
@@ -103,6 +107,19 @@ class GenomeSource(object):
         aln.score = mc.get_alignment_end_score(aln)
 
     @property
+    def aligner(self):
+        if self.aligner_type == "bwa":
+            return self.bwa
+        elif self.aligner_type == "ssw":
+            return self.ssw
+
+    @property
+    def ssw(self):
+        if self._ssw is None:
+            self._ssw = ssw_aligner.Aligner(self.names_to_contigs)
+        return self._ssw
+
+    @property
     def bwa(self):
         """
         pacbio: -k17 -W40 -r10 -A1 -B1 -O1 -E1 -L0  (PacBio reads to ref)
@@ -115,6 +132,10 @@ class GenomeSource(object):
         return self._bwa
 
     def set_aligner_params(self, sequencer):
+        if self.aligner_type != "bwa":
+            print("not bwa... skipping setting aligner settings")
+            return
+
         params = PARAMS[sequencer]
         if "min_seed_length" in params:
             self.bwa.SetMinSeedLength(params["min_seed_length"])
@@ -146,11 +167,12 @@ class GenomeSource(object):
 
 class FastaGenomeSource(GenomeSource):
     """ pickle-able wrapper for pyfaidx.Fasta """
-    def __init__(self, path, blacklist=None):
+    def __init__(self, path, blacklist=None, aligner_type="bwa"):
         self.path = path
         self._fasta = None
         self._bwa = None
         self.blacklist = blacklist
+        self.aligner_type = aligner_type
         
     def get_seq(self, chrom, start, end, strand):
         chrom = match_chrom_format(chrom, list(self.fasta.keys()))
