@@ -7,9 +7,15 @@ import sys
 # from svviz import annotations
 # from svviz import gff
 #import genomesource
-from genosv.remap.new_realignment import GenomeSource, FastaGenomeSource
+from genosv.app import genomesource
 from genosv.app.sample import Sample
+from genosv.app import variants
+from genosv.io import getreads
 from genosv.io import vcfparser
+from genosv.io import saverealignments
+from genosv.remap import maprealign
+from genosv.remap import genotyping
+
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +46,41 @@ class DataHub(object):
         # self.annotationSets = collections.OrderedDict()
 
 
+    def genotype_cur_variant(self):
+        temp_storage = {}
+
+        for sample_name, sample in self.samples.items():
+            ref_count = 0
+            alt_count = 0
+
+            # sample.set_bwa_params(datahub.realigner)
+            temp_storage[sample_name] = []
+
+            for batch in getreads.get_read_batch(sample, self):
+                if sample.single_ended:
+                    logger.info("Analyzing {} reads".format(len(batch)))
+                else:
+                    logger.info("Analyzing {} read pairs".format(len(batch)))
+
+                aln_sets = maprealign.map_realign(batch, self, sample)
+                # aln_sets = map_realign(batch, datahub.realigner, sample)
+
+                cur_ref_count, cur_alt_count = genotyping.assign_reads_to_alleles(
+                    aln_sets,
+                    variants.get_breakpoints_on_local_reference(self.variant, "ref"),
+                    variants.get_breakpoints_on_local_reference(self.variant, "alt"),
+                    sample.read_statistics)
+                ref_count += cur_ref_count
+                alt_count += cur_alt_count
+
+                saverealignments.save_realignments(aln_sets, sample, self)
+
+                temp_storage[sample_name].extend(aln_sets)
+
+            print("REF:", ref_count, "ALT:", alt_count)
+
+        return temp_storage
+
     def __getstate__(self):
         """ allows pickling of DataHub()s """
         state = self.__dict__.copy()
@@ -59,11 +100,11 @@ class DataHub(object):
         local_coords_in_full_genome = self.variant.search_regions(self.align_distance)
         self.genome.blacklist = local_coords_in_full_genome
         
-        self.local_ref_genome_source = GenomeSource(self.variant.seqs("ref"))
+        self.local_ref_genome_source = genomesource.GenomeSource(self.variant.seqs("ref"))
         # local_coords_in_full_genome = self.variant.search_regions(self.align_distance)
         # self.realigner.set_local_ref_genome(ref_genome_source, local_coords_in_full_genome)
 
-        self.local_alt_genome_source = GenomeSource(self.variant.seqs("alt"))
+        self.local_alt_genome_source = genomesource.GenomeSource(self.variant.seqs("alt"))
         # self.realigner.set_local_alt_genome(alt_genome_source)
 
         # TODO: fix this...
@@ -88,7 +129,7 @@ class DataHub(object):
     def set_args(self, args):
         self.args = args
 
-        self.genome = FastaGenomeSource(args.ref)
+        self.genome = genomesource.FastaGenomeSource(args.ref)
 
         for bamPath in self.args.bam:
             name = name_from_bam_path(bamPath)

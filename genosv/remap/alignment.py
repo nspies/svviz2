@@ -1,4 +1,3 @@
-import collections
 import pysam
 
 from genosv.utility import misc
@@ -17,23 +16,6 @@ ATTRIBS = ["query_name",
            "query_qualities",
            "tags"]
 
-# def check_overlaps():
-#   if check_overlaps:
-#       for ref_mapping in ref_mappings:
-#           ref_chrom = self.ref_mapper.ChrIDToName(ref_mapping.reference_id)
-#           ref_mapping_locus = utilities.Locus(
-#               ref_chrom, ref_mapping.reference_start,
-#               ref_mapping.reference_start+ref_mapping.reference_length, "+")
-#           overlaps = False
-#           for breakpoint in self.breakpoints:
-#               if (ref_mapping_locus.overlaps(breakpoint) or ref_mapping_locus.overlapsAntisense(breakpoint)):
-#                   overlaps = True
-#                   break
-#           if overlaps:
-#               ref_mapping.set_tag("OV", True)
-#           else:
-#               ref_mapping.set_tag("OV", False)
-
 class Alignment(object):
     """
     this is a pickle-able wrapper for reads from a bam file
@@ -41,6 +23,7 @@ class Alignment(object):
     def __init__(self, read):
         self._read = read
         self._storage = None
+        self.chrom = None
 
     def original_sequence(self):
         if self.is_reverse:
@@ -48,18 +31,27 @@ class Alignment(object):
         return self.query_sequence
 
     def original_qualities(self):
+        if self.query_qualities is None:
+            return None
         if self.is_reverse:
             return self.query_qualities[::-1]
         return self.query_qualities
 
     @property
     def locus(self):
-        chrom = "chrMissing"
-        if self.source is not None:
-            chrom = self.source.get_chrom_by_id(self._read.reference_id)
+        chrom = self.chrom
+        if chrom is None:
+            chrom = self._read.reference_name
+
         start = self._read.reference_start
         end = self._read.reference_end
-        locus = misc.Locus(chrom, start, end, "+")
+
+        # if self.cigartuples[0][0] == 4:
+        #     start += self.cigartuples[0][1]
+        # if self.cigartuples[-1][0] == 4:
+        #     end -= self.cigartuples[-1][1]
+
+        locus = misc.Locus(chrom, start, end, "-" if self.is_reverse else "+")
 
         return locus
 
@@ -97,18 +89,10 @@ class Alignment(object):
 
 _orients = {False: "+", True:"-"}
 
-
-class PairAlignment(object):
-    """
-    This is a concrete instance of a single possible pairing of read alignments
-    """
-    def __init__(self, read1, read2):
-        assert read1.query_name == read2.query_name
-
-        self.query_name = read1.query_name
-
-        self.read1 = read1
-        self.read2 = read2
+class AlignmentPair(object):
+    def __init__(self, aln1, aln2, name=None):
+        self.aln1 = aln1
+        self.aln2 = aln2
 
         self._insert_size = None
         self._orientation = None
@@ -117,20 +101,19 @@ class PairAlignment(object):
         self.posterior = None
         self.mapq = None
 
-        self.source = None
+        self.name = name
 
     @property
-    def locus(self):
-        assert self.read1.reference_id == self.read2.reference_id
+    def loci(self):
+        if self.aln1.reference_id == self.aln2.reference_id:
+            chrom = self.aln1.chrom
+            start = min(self.aln1.reference_start, self.aln2.reference_start)
+            end = max(self.aln1.reference_end, self.aln2.reference_end)
+            locus = misc.Locus(chrom, start, end, "+")
 
-        chrom = "chrMissing"
-        if self.source is not None:
-            chrom = self.source.get_chrom_by_id(self.read1.reference_id)
-        start = min(self.read1.reference_start, self.read2.reference_start)
-        end = max(self.read1.reference_end, self.read2.reference_end)
-        locus = misc.Locus(chrom, start, end, "+")
-
-        return locus
+            return [locus]
+        else:
+            return [self.aln1.locus, self.aln2.locus]
         
     @property
     def insert_size(self):
@@ -145,10 +128,10 @@ class PairAlignment(object):
         return self._orientation
         
     def _calculate_pairing_stats(self):
-        if self.read1.reference_id != self.read2.reference_id:
+        if self.aln1.reference_id != self.aln2.reference_id:
             return
 
-        aln1, aln2 = self.read1, self.read2
+        aln1, aln2 = self.aln1, self.aln2
 
         if aln1.reference_start > aln2.reference_start:
             aln1, aln2 = aln2, aln1
@@ -159,7 +142,7 @@ class PairAlignment(object):
         self._insert_size = (aln2.reference_start + aln2.reference_length) - aln1.reference_start
 
     def concordant(self, read_stats):
-        if self.read1.reference_id != self.read2.reference_id:
+        if self.aln1.reference_id != self.aln2.reference_id:
             return False
 
         if self.orientation not in read_stats.orientations:
@@ -170,124 +153,43 @@ class PairAlignment(object):
         return True
 
     def fix_flags(self):
-    #     pair.read1.query_qualities = pysam.qualitystring_to_array("I"*pair.read1.query_length)#numpy.repeat(40, pair.read1.query_length)
-    #     pair.read2.query_qualities = pysam.qualitystring_to_array("I"*pair.read2.query_length)#numpy.repeat(40, pair.read2.query_length)
-        self.read1.is_paired = True
-        self.read2.is_paired = True
+        self.aln1._read.query_name = self.name
+        self.aln2._read.query_name = self.name
+        
+        self.aln1._read.is_paired = True
+        self.aln2._read.is_paired = True
 
-        self.read1.is_read1 = True
-        self.read2.is_read1 = False
-        self.read1.is_read2 = False
-        self.read2.is_read2 = True
+        self.aln1._read.is_read1 = True
+        self.aln2._read.is_read1 = False
+        self.aln1._read.is_read2 = False
+        self.aln2._read.is_read2 = True
 
-        self.read1.mate_is_reverse = self.read2.is_reverse
-        self.read2.mate_is_reverse = self.read1.is_reverse
+        self.aln1._read.mate_is_reverse = self.aln2.is_reverse
+        self.aln2._read.mate_is_reverse = self.aln1.is_reverse
 
-        self.read1.next_reference_id = self.read2.reference_id
-        self.read2.next_reference_id = self.read1.reference_id
+        self.aln1._read.next_reference_id = self.aln2.reference_id
+        self.aln2._read.next_reference_id = self.aln1.reference_id
 
-        self.read1.next_reference_start = self.read2.reference_start
-        self.read2.next_reference_start = self.read1.reference_start
+        self.aln1._read.next_reference_start = self.aln2.reference_start
+        self.aln2._read.next_reference_start = self.aln1.reference_start
 
-        self.read1.template_length = self.insert_size
-        self.read2.template_length = self.insert_size
+        if self.insert_size is not None:
+            if self.aln1.reference_start < self.aln2.reference_start:
+                self.aln1._read.template_length = self.insert_size
+                self.aln2._read.template_length = -self.insert_size
+            else:
+                self.aln1._read.template_length = -self.insert_size
+                self.aln2._read.template_length = self.insert_size
 
-        self.read1.is_secondary = False
-        self.read1.is_supplementary = False
+        self.aln1._read.is_secondary = False
+        self.aln1._read.is_supplementary = False
 
-        self.read2.is_secondary = False
-        self.read2.is_supplementary = False
+        self.aln2._read.is_secondary = False
+        self.aln2._read.is_supplementary = False
 
         if self.mapq is not None:
-            self.read1.mapq = int(self.mapq)
-            self.read2.mapq = int(self.mapq)
-
-
-class MultiReferenceAlignmentSet(object):
-    """
-    represents all the alignments of a read(-pair) against each allele
-    """
-    def __init__(self, ref_source, alt_source):
-        self.name = None
-        self.ref_source = ref_source
-        self.alt_source = alt_source
-
-        self.alignments = None
-
-    def add_alignments(self, alignments, allele):
-        if self.alignments is None:
-            self.alignments = {"ref":[], "alt":[]}
-
-        for aln in alignments:
-            if not self.name:
-                self.name = aln.query_name
-            assert self.name == aln.query_name
-
-        source = self.ref_source if allele == "ref" else self.alt_source
-        for alignment in alignments:
-            alignment.source = source
-
-        self.alignments[allele].extend(alignments)
-
-    def get_alns(self, allele=None):
-        alleles = [allele]
-        if allele is None:
-            alleles = ["ref", "alt"]
-        alns = []
-        for allele in alleles:
-            alns.extend(self.alignments[allele])
-
-        return alns
-
-class MultiReferenceReadEndAlignmentSet(MultiReferenceAlignmentSet):
-    """
-    represents all the alignments of the read ends against one genome
-    this is used before read end alignments have been paired together
-    """
-    def add_alignments(self, alignments, allele, end=1):
-        if self.alignments is None:
-            self.alignments = {"ref":{}, "alt":{}}
-
-        if not end in self.alignments[allele]:
-            self.alignments[allele][end] = []
-
-        for aln in alignments:
-            if not self.name:
-                self.name = aln.query_name
-            assert self.name == aln.query_name
-
-        self.alignments[allele][end].extend(alignments)
-
-    def get_alns(self, allele=None, end=None):
-        alleles = [allele]
-        if allele is None:
-            alleles = ["ref", "alt"]
-        ends = [end]
-        if end is None:
-            ends = sorted(set(self.alignments["ref"].keys()).union(set(self.alignments["alt"].keys())))
-
-        alns = []
-        for allele in alleles:
-            for end in ends:
-                alns.extend(self.alignments[allele][end])
-
-        return alns
-
-    def info(self):
-        return "END 1:: ref:{}  alt:{}    END 2::  ref:{}  alt:{}".format(
-            len(self.get_alns("ref", 1)),len(self.get_alns("alt", 1)),
-            len(self.get_alns("ref", 2)),len(self.get_alns("alt", 2)))
-
-    # def extend(self, alns):
-    #     for aln in alns:
-    #         self.append(aln)
-
-    # def append(self, aln):
-    #     if self.name is not None:
-    #         self.name = aln.query_name
-    #     assert self.name == aln.query_name
-
-    #     self.alignments.append(aln)
+            self.aln1._read.mapq = int(self.mapq)
+            self.aln2._read.mapq = int(self.mapq)
 
 
 

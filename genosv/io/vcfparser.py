@@ -53,7 +53,7 @@ class VCFParser(object):
 def get_sequence_defined(variant, datahub):
     sdv = variants.SequenceDefinedVariant(
         variant.chrom, variant.start, variant.stop-1,
-        variant.alts[0], datahub)
+        variant.alts[0], datahub, variant.id)
 
     print(sdv)
     return sdv
@@ -101,29 +101,49 @@ def _parse_breakend(record):
     if orientation is None:
         return None
     else:
-        return chrom, pos, other_chrom, int(other_pos), orientation, alt
+        id_ = record.id
+        if "EVENT" in record.info:
+            # TODO: see if we care that a complex event can have multiple breakends
+            # with the same "EVENT"
+            id_ = record.info["EVENT"] 
+
+        result = {
+            "chrom": chrom,
+            "pos": pos, 
+            "other_chrom":other_chrom,
+            "other_pos": int(other_pos),
+            "orientation": orientation,
+            "alt": alt,
+            "id": id_
+            }
+        return result
 
 def parse_breakend(record1, record2, datahub):
-    chrom, pos, other_chrom, other_pos, orientation, alt = _parse_breakend(record1)
+    result1 = _parse_breakend(record1)
 
-    _chrom, _pos, _other_chrom, _other_pos, _orientation, _alt = _parse_breakend(record2)
-    if not (_chrom == other_chrom and _pos == other_pos):
-        print(chrom, pos, other_chrom, other_pos, orientation)
-        print(_chrom, _pos, _other_chrom, _other_pos, _orientation)
+    result2 = _parse_breakend(record2)
+    if not (result1["chrom"] == result2["other_chrom"] and result1["pos"] == result2["other_pos"]):
+        print(result1)
+        print(result2)
         logger.error("Malformed VCF: breakends do not appear to match:\n{}\n{}".format(
             record1, record2))
         return None
 
-    if chrom == other_chrom and abs(pos-other_pos) < datahub.align_distance*5:
+    if result1["chrom"] == result1["other_chrom"] and \
+            abs(result1["pos"]-result1["other_pos"]) < datahub.align_distance*5:
         logger.error("Can't yet handle nearby breakends; skipping")
         return None
 
     # convert from 1-based to 0-based coordinates
-    breakpoint1 = Locus(chrom, pos-1, pos-1, orientation[0])
-    breakpoint2 = Locus(other_chrom, other_pos-1, other_pos-1, orientation[1])
+    breakpoint1 = Locus(result1["chrom"],
+                        result1["pos"]-1, result1["pos"]-1,
+                        result1["orientation"][0])
+    breakpoint2 = Locus(result1["other_chrom"],
+                        result1["other_pos"]-1, result1["other_pos"]-1,
+                        result1["orientation"][1])
 
     print(breakpoint1, breakpoint2)
-    return variants.Breakend(breakpoint1, breakpoint2, datahub)
+    return variants.Breakend(breakpoint1, breakpoint2, datahub, result1["id"])
 
 
 

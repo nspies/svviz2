@@ -4,23 +4,6 @@ import numpy
 from genosv.remap import mapq
 from genosv.utility import misc
 
-try:
-    import scipy.misc
-    def log_choose(n,k):
-        return numpy.log10(scipy.misc.comb(n,k))
-except ImportError:
-    def log_choose(n, k):
-        r = 0.0
-        # swap for efficiency if k is more than half of n
-        if k * 2 > n:
-            k = n - k
-
-        for  d in range(1,k+1):
-            r += numpy.log10(n)
-            r -= numpy.log10(d)
-            n -= 1
-
-        return r
 
 
 def calculate_genotype_likelihoods(ref, alt, priors=[0.05, 0.5, 0.95], max_qual=200):
@@ -31,7 +14,7 @@ def calculate_genotype_likelihoods(ref, alt, priors=[0.05, 0.5, 0.95], max_qual=
     ref = int(ref)
     alt = int(alt)
 
-    log_combo = log_choose(ref+alt, alt)
+    log_combo = misc.log_choose(ref+alt, alt)
 
     log_prob_homref = log_combo + alt * numpy.log10(priors[0]) + ref * numpy.log10(1-priors[0])
     log_prob_het    = log_combo + alt * numpy.log10(priors[1]) + ref * numpy.log10(1-priors[1])

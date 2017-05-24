@@ -1,9 +1,10 @@
 import collections
-import logging
+# import logging
 
 # from svviz.utilities import Locus, getListDefault
 # import genomesource
-from genosv.utility.misc import Locus
+from genosv.utility.misc import Locus, safe_file_name
+from genosv.app import genomesource
 
 
 def non_negative(x):
@@ -134,11 +135,12 @@ class Segment(Locus):
 
 
 class StructuralVariant(object):
-    def __init__(self, breakpoints, datahub):
+    def __init__(self, breakpoints, datahub, name):
         self.breakpoints = sorted(breakpoints, key=lambda x: (x.chrom, x.start))
         self.align_distance = datahub.align_distance
 
         self.sources = {"genome":datahub.genome}
+        self.name = safe_file_name(name)
 
         self._seqs = {}
 
@@ -152,9 +154,9 @@ class StructuralVariant(object):
 
 
     def __str__(self):
-        return "{}({};{})".format(self.__class__.__name__, self.breakpoints, self.align_distance)
+        return "{}:{}({};{})".format(self.name, self.__class__.__name__, self.breakpoints, self.align_distance)
     def short_name(self):
-        return "{}_{}_{}".format(self.__class__.__name__[:3].lower(), self.breakpoints[0].chrom, self.breakpoints[0].start)
+        return "{}.{}_{}_{}".format(self.name, self.__class__.__name__[:3].lower(), self.breakpoints[0].chrom, self.breakpoints[0].start)
 
     def search_regions(self):
         pass    
@@ -218,9 +220,9 @@ class StructuralVariant(object):
 
 
 class SequenceDefinedVariant(StructuralVariant):
-    def __init__(self, chrom, start, end, alt_seq, datahub):
+    def __init__(self, chrom, start, end, alt_seq, datahub, name):
         breakpoint = Locus(chrom, start, end, "+")
-        super(SequenceDefinedVariant, self).__init__([breakpoint], datahub)
+        super(SequenceDefinedVariant, self).__init__([breakpoint], datahub, name)
 
         self.sources["insertion"] = genomesource.GenomeSource({"insertion":alt_seq})
         self.insertionLength = len(alt_seq)
@@ -256,24 +258,26 @@ class SequenceDefinedVariant(StructuralVariant):
 
     def __str__(self):
         if len(self.breakpoints[0]) > 1:
-            return "{}::{}:{:,}-{:,};len={}".format(self.__class__.__name__, 
-                                                  self.breakpoints[0].chrom, 
-                                                  self.breakpoints[0].start, 
-                                                  self.breakpoints[0].end,
-                                                  self.insertionLength)
+            return "{}:{}::{}:{:,}-{:,};len={}".format(
+                                                    self.name,
+                                                    self.__class__.__name__, 
+                                                    self.breakpoints[0].chrom, 
+                                                    self.breakpoints[0].start, 
+                                                    self.breakpoints[0].end,
+                                                    self.insertionLength)
 
         return "{}::{}:{:,};len={}".format(self.__class__.__name__, self.breakpoints[0].chrom, self.breakpoints[0].start, self.insertionLength)
        
     def short_name(self):
-        return "{}_{}_{}-{}".format(self.__class__.__name__,
+        return "{}.{}.{}_{}-{}".format(self.name, self.__class__.__name__,
             self.breakpoints[0].chrom, 
             self.breakpoints[0].start, 
             self.breakpoints[-1].end)
 
 
 class Breakend(StructuralVariant):
-    def __init__(self, breakpoint1, breakpoint2, datahub):
-        super(Breakend, self).__init__([breakpoint1, breakpoint2], datahub)
+    def __init__(self, breakpoint1, breakpoint2, datahub, name):
+        super(Breakend, self).__init__([breakpoint1, breakpoint2], datahub, name)
 
         self.breakpoints = [breakpoint1, breakpoint2]
         self.chrom_parts("alt")
@@ -339,7 +343,9 @@ class Breakend(StructuralVariant):
         if not chrom1.startswith("chr"):
             chrom1 = "chr{}".format(chrom1)
             chrom2 = "chr{}".format(chrom2)
-        return "{}__{}:{:,}__{}:{:,}".format(self.__class__.__name__, chrom1, self.breakpoints[0].start, chrom2, self.breakpoints[1].start)
+        return "{}|{}::{}:{:,}/{}:{:,}".format(
+            self.name, self.__class__.__name__, 
+            chrom1, self.breakpoints[0].start, chrom2, self.breakpoints[1].start)
 
 
 # class Deletion(StructuralVariant):

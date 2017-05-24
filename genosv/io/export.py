@@ -17,8 +17,8 @@ class TrackCompositor(object):
         self.descriptions = []
 
         self.marginTopBottom = 20
-        self.sectionLabelHeight = 32
-        self.betweenSectionHeight = 30
+        self.sectionLabelHeight = 28
+        self.betweenSectionHeight = 28
         self.trackLabelHeight = 20
 
         self._fromDataHub()

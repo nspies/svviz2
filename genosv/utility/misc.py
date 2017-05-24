@@ -1,4 +1,5 @@
 # import os
+import numpy
 import string
 # import subprocess
 # import sys
@@ -14,6 +15,12 @@ import string
 #     elif os.name == 'posix':
 #         subprocess.call(('xdg-open', filepath))
 
+
+def safe_file_name(text):
+    text = text.replace(":", "_")
+    whitelist = "-_.()" + string.ascii_letters + string.digits
+
+    return "".join(t for t in text if t in whitelist)
 
 ############################ String utilities ############################
 try:
@@ -38,6 +45,24 @@ def reverse_string(st):
 
 #     return list_[index]
 
+
+try:
+    import scipy.misc
+    def log_choose(n,k):
+        return numpy.log10(scipy.misc.comb(n,k))
+except ImportError:
+    def log_choose(n, k):
+        r = 0.0
+        # swap for efficiency if k is more than half of n
+        if k * 2 > n:
+            k = n - k
+
+        for  d in range(1,k+1):
+            r += numpy.log10(n)
+            r -= numpy.log10(d)
+            n -= 1
+
+        return r
 
 # ############################ Coordinates utilities ############################
 
