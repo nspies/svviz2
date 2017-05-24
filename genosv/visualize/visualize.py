@@ -16,6 +16,6 @@ def visualize(datahub, temp_storage):
 
     e = export.TrackCompositor(datahub)
     
-    with open("temp.pdf", "wb") as outf:
+    with open("{}.pdf".format(datahub.variant.short_name()), "wb") as outf:
         d = export.convertSVG(e.render(), "pdf", "webkittopdf")
         outf.write(d)

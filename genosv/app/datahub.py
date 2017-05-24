@@ -2,11 +2,8 @@ import collections
 import logging
 import os
 import pysam
-import sys
 
-# from svviz import annotations
-# from svviz import gff
-#import genomesource
+
 from genosv.app import genomesource
 from genosv.app.sample import Sample
 from genosv.app import variants
@@ -45,7 +42,7 @@ class DataHub(object):
         self.alleleTracks = collections.defaultdict(collections.OrderedDict)
         # self.annotationSets = collections.OrderedDict()
 
-        self.aligner_type = "ssw"
+        self.aligner_type = "bwa"
 
 
     def genotype_cur_variant(self):
@@ -75,7 +72,7 @@ class DataHub(object):
                 ref_count += cur_ref_count
                 alt_count += cur_alt_count
 
-                saverealignments.save_realignments(aln_sets, sample, self)
+                # saverealignments.save_realignments(aln_sets, sample, self)
 
                 temp_storage[sample_name].extend(aln_sets)
 
@@ -108,18 +105,19 @@ class DataHub(object):
             self.variant.seqs("alt"), aligner_type=self.aligner_type)
 
         # TODO: fix this...
-        for sample_name, sample in self.samples.items():
-            sample.out_alt_bam = pysam.AlignmentFile("{}.alt.realigned.bam".format(sample_name), "wb",
-                header=_get_bam_headers(self.variant, "alt"))
-            sample.out_ref_bam = pysam.AlignmentFile("{}.ref.realigned.bam".format(sample_name), "wb",
-                header=_get_bam_headers(self.variant, "ref"))
+        if False:
+            for sample_name, sample in self.samples.items():
+                sample.out_alt_bam = pysam.AlignmentFile("{}.alt.realigned.bam".format(sample_name), "wb",
+                    header=_get_bam_headers(self.variant, "alt"))
+                sample.out_ref_bam = pysam.AlignmentFile("{}.ref.realigned.bam".format(sample_name), "wb",
+                    header=_get_bam_headers(self.variant, "ref"))
 
-                # template=sample.bam)
+                    # template=sample.bam)
 
-        for allele in ["alt", "ref"]:
-            with open("{}_genome.{}.fa".format(allele, variant.short_name()), "w") as genome_file:
-                for name, seq in self.variant.seqs(allele).items():
-                    genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
+            for allele in ["alt", "ref"]:
+                with open("{}_genome.{}.fa".format(allele, variant.short_name()), "w") as genome_file:
+                    for name, seq in self.variant.seqs(allele).items():
+                        genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
 
         # with open("ref_genome.{}.fa".format(variant), "w") as ref_genome_file:
         #     for name, seq in self.variant.ref_seqs().items():

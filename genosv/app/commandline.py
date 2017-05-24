@@ -1,8 +1,11 @@
 import argparse
 import sys
 
+import genosv
+
+
 def parse_args(input_args):
-    parser = argparse.ArgumentParser(description="genosv",# version {}".format(svviz.__version__),
+    parser = argparse.ArgumentParser(description="genosv version {}".format(genosv.__version__),
         usage="%(prog)s [options] [demo] --ref REF --variants VARIANTS BAM [BAM2 ...]",
         formatter_class=argparse.RawTextHelpFormatter)
 
