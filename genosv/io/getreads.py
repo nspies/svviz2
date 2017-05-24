@@ -1,7 +1,8 @@
 import logging
 
 from genosv.io import pairedreaditer
-from genosv.remap.new_realignment import ReadPair
+from genosv.remap import alignment
+from genosv.remap.readpair import ReadPair
 
 logger = logging.getLogger(__name__)
 
@@ -13,24 +14,25 @@ def get_read_batch(sample, datahub):
         for batch in get_read_pairs(sample, datahub):
             yield [ReadPair(read1, read2, sample.read_statistics) for (read1, read2) in batch]
 
-# def get_reads_unpaired(sample, datahub):
-#     logger.info("Loading more reads...")
-#     cur_reads = []
-#     search_regions = datahub.variant.search_regions(sample.search_distance)
 
-#     for region in search_regions:
-#         chrom, start, end = region.chrom, region.start, region.end
-#         for read in sample.bam.fetch(chrom, start, end):
-#             # if read.query_name != "m150105_192231_42177R_c100761782550000001823161607221526_s1_p0/138972/39862_46995":
-#             #     continue
+def get_reads_unpaired(sample, datahub):
+    logger.info("Loading more reads...")
+    cur_reads = []
+    search_regions = datahub.variant.search_regions(sample.search_distance)
 
-#             cur_reads.append(alignment.Alignment(read))
-#             if datahub.args.batch_size is not None and len(cur_reads) >= datahub.args.batch_size:
-#                 yield cur_reads
-#                 logger.info("Loading more reads...")
-#                 cur_reads = []
+    for region in search_regions:
+        chrom, start, end = region.chrom, region.start, region.end
+        for read in sample.bam.fetch(chrom, start, end):
+            # if read.query_name != "m150105_192231_42177R_c100761782550000001823161607221526_s1_p0/138972/39862_46995":
+            #     continue
 
-#     yield cur_reads
+            cur_reads.append(alignment.Alignment(read))
+            if datahub.args.batch_size is not None and len(cur_reads) >= datahub.args.batch_size:
+                yield cur_reads
+                logger.info("Loading more reads...")
+                cur_reads = []
+
+    yield cur_reads
 
 
 

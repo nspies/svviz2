@@ -40,7 +40,7 @@ class Sample(object):
             # two platforms anymore, but they do correspond to the presets that
             # bwa mem has, which we're mimicking
             if mismatch_rate > 0.10:
-                self.sequencer = "minion"
+                self.sequencer = "nanopore"
             elif mismatch_rate > 0.01:
                 self.sequencer = "pacbio"
 
@@ -112,13 +112,20 @@ class ReadStatistics(object):
 
         try:
             results = sampleInsertSizes(bam)
-            self.insertSizes, self.orientations, self.readLengths, self.number_mismatches, self.discordant_frac = results
+            self.insertSizes = results["insertSizes"]
+            self.orientations = results["chosenOrientations"]
+            self.readLengths = results["readLengths"]
+            self.number_mismatches = results["nms"]
+            self.discordant_frac = results["discordant"]
+
+            # self.insertSizes, self.orientations, self.readLengths, self.number_mismatches, self.discordant_frac = results
             if len(self.insertSizes) > 1:
                 logger.info("  insert size mean: {:.2f} std: {:.2f} min:{} max:{}".format(
                     numpy.mean(self.insertSizes), numpy.std(self.insertSizes),
                     numpy.min(self.insertSizes), self.maxInsertSize()))
                 logger.info("  discordant: {:.4f}".format(self.discordant_frac))
         except Exception as e:
+            raise
             logger.error("Error determining orientation / pairing statistics: {}".format(e))
 
 
@@ -294,6 +301,7 @@ def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40, reference=None):
                 continue
 
             if orientations["unpaired"] > 2500 and count < 1000:
+                print(count, orientations)
                 # bail out early if it looks like it's single-ended
                 break
 
@@ -336,9 +344,22 @@ def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40, reference=None):
                 break
         if count >= maxreads:
             break
+        if orientations["unpaired"] > 2500 and count < 1000:
+            break
 
     chosenOrientations = chooseOrientation(orientations)
 
     # print("NM "*30, numpy.mean(nms), numpy.mean(readLengths),
     #     numpy.median(numpy.array(nms)/numpy.array(readLengths, dtype=float)))
-    return removeOutliers(inserts), chosenOrientations, numpy.array(readLengths), numpy.array(nms), discordant/float(discordant+concordant)
+    discordant_frac = None
+    if discordant + concordant > 100:
+        discordant_frac = discordant/float(discordant+concordant)
+    result = {
+        "insertSizes": removeOutliers(inserts),
+        "chosenOrientations": chosenOrientations,
+        "readLengths": numpy.array(readLengths),
+        "nms": numpy.array(nms),
+        "discordant":discordant_frac
+    }
+    return result
+    # return removeOutliers(inserts), chosenOrientations, numpy.array(readLengths), numpy.array(nms), discordant/float(discordant+concordant)

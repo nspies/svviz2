@@ -1,6 +1,8 @@
+import collections
 import pysam
 
 from genosv.utility import misc
+from genosv.remap import mapq
 
 
 ATTRIBS = ["query_name",
@@ -24,6 +26,10 @@ class Alignment(object):
         self._read = read
         self._storage = None
         self.chrom = None
+
+        self.ref_pairs = []
+        self.alt_pairs = []
+
 
     def original_sequence(self):
         if self.is_reverse:
@@ -85,6 +91,31 @@ class Alignment(object):
         state = self.__dict__.copy()
 
         return state
+
+
+
+    def realign_against_allele(self, genome_sources):
+        """ use this to realign against one allele """
+        alns = []
+        for genome_source in genome_sources:
+            # this calculates the alignment score
+            cur_alns = genome_source.align(self)
+            for aln in cur_alns:
+                aln.concordant = lambda x: True
+                aln.loci = [aln.locus]
+                aln.name = self._read.query_name
+            alns.extend(cur_alns)
+
+        return alns
+
+    def realign(self, ref_genome_sources, alt_genome_sources):
+        self.ref_pairs = self.realign_against_allele(ref_genome_sources)
+        self.alt_pairs = self.realign_against_allele(alt_genome_sources)
+
+        mapq.set_mapqs(self.ref_pairs+self.alt_pairs)
+        self.ref_pairs.sort(key=lambda x: x.score, reverse=True)
+        self.alt_pairs.sort(key=lambda x: x.score, reverse=True)
+
 
 
 _orients = {False: "+", True:"-"}

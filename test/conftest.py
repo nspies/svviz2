@@ -4,7 +4,9 @@ import pysam
 import pytest
 import random
 
-from genosv.remap.new_realignment import Alignment, GenomeSource, ReadPair
+from genosv.remap.readpair import ReadPair
+from genosv.remap.alignment import Alignment
+from genosv.app.genomesource import GenomeSource
 from genosv.utility.misc import reverse_comp
 from genosv.app.sample import ReadStatistics
 

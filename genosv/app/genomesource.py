@@ -71,12 +71,14 @@ class GenomeSource(object):
     def keys(self):
         return list(self.names_to_contigs.keys())
 
-
+    # @profile
     def align(self, read):
         alns = []
         qualities = read.original_qualities()
 
-        for aln in self.bwa.align(read.original_sequence(), hardclip=False):
+        raw_alns = self.bwa.align(read.original_sequence(), hardclip=False)
+
+        for aln in raw_alns:
             aln = Alignment(aln)
             if aln.is_reverse and qualities is not None:
                 aln._read.query_qualities = qualities[::-1]

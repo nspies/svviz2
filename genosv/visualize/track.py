@@ -229,7 +229,12 @@ class ReadRenderer(object):
 
 
         # for alignment in alignmentSet.getAlignments():
-        for end in [alignmentSet.aln1, alignmentSet.aln2]:
+        try:
+            alns = [alignmentSet.aln1, alignmentSet.aln2]
+        except AttributeError:
+            alns = [alignmentSet]
+
+        for end in alns:
             alignment = end.locus
             alignment.cigar = end.cigarstring
             alignment.seq = end.query_sequence
