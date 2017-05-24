@@ -26,7 +26,7 @@ def test_get_names(genome_source):
 
 def test_get_bwa(genome_source):
     bwa = genome_source.bwa
-    assert len(genome_source.bwa.align("ATCTATTTTATCGAGAGACCACACCCCAT")) == 1
+    genome_source.bwa.align
     assert genome_source.bwa == bwa
 
 def test_pickle(genome_source):

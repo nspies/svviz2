@@ -19,7 +19,7 @@ class Sample(object):
 
         self.single_ended = False
         self.orientations = None
-        self.search_distance = None
+        self._search_distance = None
 
         self.bam_path = bam_path
         self._bam = None
@@ -46,6 +46,28 @@ class Sample(object):
 
         print("ALIGNMENT PARAMS:::", self.sequencer)
 
+
+    @property
+    def search_distance(self):
+        if self._search_distance is None:
+            if self.single_ended:
+                longest_reads = numpy.percentile(self.read_statistics.readLengths, 99)
+                if longest_reads > 1e5:
+                    self._search_distance = 10000
+                self._search_distance = 1000
+            else:
+                search_distance = numpy.percentile(self.read_statistics.insertSizes, 99)
+                self._search_distance = int(search_distance)
+        return self._search_distance
+
+    @property
+    def align_distance(self):
+        if self.single_ended:
+            longest_reads = numpy.percentile(self.read_statistics.readLengths, 95) * 1.5
+            return int(longest_reads)
+        else:
+            longest_inserts = numpy.percentile(self.read_statistics.insertSizes, 98) * 1.5
+            return int(longest_inserts)
 
     @property
     def bam(self):
