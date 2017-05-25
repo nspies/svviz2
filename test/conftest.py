@@ -22,6 +22,7 @@ class _ReadStats(ReadStatistics):
 
         self._insertSizeScores = {} # cache
         self._max_insert_size = None
+read_stats = _ReadStats()
 
 
 def simulate_read_pair(sequence, start, length=150, isize=400, flip=False):
@@ -34,16 +35,16 @@ def simulate_read_pair(sequence, start, length=150, isize=400, flip=False):
 
     if flip:
         r1,r2 = r2,r1
-    return r1, r2
+    return ReadPair(Alignment(r1), Alignment(r2), read_stats)
 
 def simulate_read_pairs(sequence, n_pairs, length=150, isize=400, r=random.Random()):
     reads = []
     for i in range(n_pairs):
         start = r.randint(0, len(sequence)-isize)
         
-        r1, r2 = simulate_read_pair(sequence, start, length, isize)
+        pair = simulate_read_pair(sequence, start, length, isize)
 
-        reads.append((start, start+isize-1, Alignment(r1), Alignment(r2)))
+        reads.append((start, start+isize-1, pair))
     return reads
 
 
@@ -82,7 +83,6 @@ def heterozygous_readpairs_deletion(genome_source_deletion):
 
     ref = genome_source()
     alt, deletion_length = genome_source_deletion
-    read_stats = _ReadStats()
     alleles_to_reads = collections.defaultdict(list)
 
     for allele, gs in [("ref", ref), ("alt", alt)]:
@@ -95,8 +95,8 @@ def heterozygous_readpairs_deletion(genome_source_deletion):
             if allele == "alt":
                 event_end = 4000
 
-            for p1, p2, read1, read2 in cur_pairs:
-                read_pair = ReadPair(read1, read2, read_stats)
+            for p1, p2, read_pair in cur_pairs:
+                # read_pair = ReadPair(read1, read2, read_stats)
                 if p1 > event_end or p2 < event_start:
                     alleles_to_reads["amb"].append(read_pair)
                 elif p1 > event_end-5 or p2 < event_start+5:
