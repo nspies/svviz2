@@ -24,21 +24,26 @@ class _ReadStats(ReadStatistics):
         self._max_insert_size = None
 
 
+def simulate_read_pair(sequence, start, length=150, isize=400, flip=False):
+    r1 = pysam.AlignedSegment()
+    r1.query_sequence = sequence[start:start+length]
+
+    r2 = pysam.AlignedSegment()
+    pos2 = start+isize
+    r2.query_sequence = reverse_comp(sequence[pos2-length:pos2])
+
+    if flip:
+        r1,r2 = r2,r1
+    return r1, r2
+
 def simulate_read_pairs(sequence, n_pairs, length=150, isize=400, r=random.Random()):
     reads = []
     for i in range(n_pairs):
-        pos1 = r.randint(0, len(sequence)-isize)
-        r1 = pysam.AlignedSegment()
-        r1.query_sequence = sequence[pos1:pos1+length]
+        start = r.randint(0, len(sequence)-isize)
+        
+        r1, r2 = simulate_read_pair(sequence, start, length, isize)
 
-        r2 = pysam.AlignedSegment()
-        pos2 = pos1+isize
-        r2.query_sequence = reverse_comp(sequence[pos2-length:pos2])
-
-        if r.random() < 0.5:
-            r1,r2 = r2,r1
-
-        reads.append((pos1, pos2, Alignment(r1), Alignment(r2)))
+        reads.append((start, start+isize-1, Alignment(r1), Alignment(r2)))
     return reads
 
 
