@@ -16,6 +16,7 @@ VCFHEADER = """
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	sample1
 """.lstrip()
 
+# This is straight out of the VCF spec
 VCFEXAMPLE="""
 2	321681	bnd_W	G	G]17:198982]	6	PASS	SVTYPE=BND;MATEID=bnd_Y	GT	0/1
 2	321682	bnd_V	T	]13:123456]T	6	PASS	SVTYPE=BND;MATEID=bnd_U	GT	0/1
@@ -41,4 +42,4 @@ def test_breakend_vcf(breakend_vcf):
 
     parser = VCFParser(datahub)
     for v in parser.get_variants():
-        print(v)
+        print(v.name, v)
