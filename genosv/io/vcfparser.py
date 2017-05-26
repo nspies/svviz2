@@ -37,7 +37,6 @@ class VCFParser(object):
                 if mateid in breakends:
                     breakend = get_breakend(variant, breakends.pop(mateid), self.datahub)
                     if breakend is not None:
-                        print(breakend.chrom_parts("ref"))
                         yield breakend
                 else:
                     assert not variant.id in breakends
@@ -45,12 +44,17 @@ class VCFParser(object):
             elif only_nucs(variant.ref) and only_nucs(variant.alts[0]):
                 if sv_type in ["INS", "DEL"]:
                     yield get_sequence_defined(variant, self.datahub)
+            else:
+                logger.warn("SKIPPING VARIANT: {}".format(variant))
 
         if len(breakends) > 0:
             logger.warn("found {} unpaired breakends".format(len(breakends)))
 
 
 def get_sequence_defined(variant, datahub):
+    print("::", variant.id, variant.start, variant.stop, len(variant.ref))
+    assert variant.stop-variant.start == len(variant.ref)
+
     sdv = variants.SequenceDefinedVariant(
         variant.chrom, variant.start, variant.stop-1,
         variant.alts[0], datahub, variant.id)
@@ -142,7 +146,7 @@ def parse_breakend(record1, record2, datahub):
                         result1["other_pos"]-1, result1["other_pos"]-1,
                         result1["orientation"][1])
 
-    print(breakpoint1, breakpoint2)
+    # print(breakpoint1, breakpoint2)
     return variants.Breakend(breakpoint1, breakpoint2, datahub, result1["id"])
 
 

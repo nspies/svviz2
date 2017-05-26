@@ -266,7 +266,8 @@ class SequenceDefinedVariant(StructuralVariant):
                                                     self.breakpoints[0].end,
                                                     self.insertionLength)
 
-        return "{}::{}:{:,};len={}".format(self.__class__.__name__, self.breakpoints[0].chrom, self.breakpoints[0].start, self.insertionLength)
+        return "{}:{}::{}:{:,};len={}".format(self.name, self.__class__.__name__,
+            self.breakpoints[0].chrom, self.breakpoints[0].start, self.insertionLength)
        
     def short_name(self):
         return "{}.{}.{}_{}-{}".format(self.name, self.__class__.__name__,
