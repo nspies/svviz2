@@ -32,6 +32,43 @@ def calculate_genotype_likelihoods(ref, alt, priors=[0.05, 0.5, 0.95], max_qual=
     return log_probs, phred_genotype_qualities
 
 
+def get_best_overlap(read_locus, breakpoints):
+    best_overlap = 0
+
+    for breakpoint in breakpoints:
+        if not read_locus.overlapsAnysense(breakpoint):
+            continue
+        if len(breakpoint) > 1:
+            raise NotImplementedError("breakpoints with size > 1")
+
+        cur_overlap = min([
+            breakpoint.start - read_locus.start,
+            read_locus.end - breakpoint.start])
+
+        best_overlap = max(cur_overlap, best_overlap)
+
+    return best_overlap
+
+def set_read_supports_allele(aln_set, aln, allele, score, read_stats, breakpoint_collection, min_overlap):
+    if not aln.concordant(read_stats):
+        return 0
+
+    assert len(aln.loci) == 1
+    aln_locus = aln.loci[0]
+
+    overlap = get_best_overlap(aln_locus, breakpoint_collection)
+
+    # print(overlap, aln_locus, breakpoint_collection)
+    if overlap >= min_overlap:
+        aln_set.supports_allele = allele
+        aln_set.support_prob = (1 - mapq.phred_to_prob(score, 10.0))
+        aln_set.supporting_aln = aln
+        aln_set.overlap = overlap
+        aln.overlap = overlap ## TODO: TEMP
+        return aln_set.support_prob
+
+    return 0
+
 def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_collection, read_stats):
     def get_best_score(_aln_set, _allele):
         # alignments = _aln_set.get_alns(_allele)
@@ -46,60 +83,50 @@ def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_
     ref_total = 0
     alt_total = 0
 
-    # print(ref_breakpoint_collection)
-    # print(alt_breakpoint_collection)
     for aln_set in aln_sets:
         ref_score = get_best_score(aln_set, "ref")
         alt_score = get_best_score(aln_set, "alt")
 
         # if aln_set.name == "D00360:99:C8VWFANXX:4:2310:5190:27306":
-        # if aln_set.name == "ST-E00130:359:HGV3HCCXX:1:1212:21917:44028":
-        #     print("ALT", [(x.loci, x.mapq) for x in aln_set.alt_pairs])
-        #     print("REF", [(x.loci, x.mapq) for x in aln_set.ref_pairs])
-        #     print("ALT:", [x.mapq for x in aln_set.get_alns("alt")])
-        #     print("REF:", [x.mapq for x in aln_set.get_alns("ref")])
-
         aln_set.supports_allele = "amb"
         aln_set.support_prob = 0
         aln_set.supporting_aln = None
 
-        # print(aln_set.name)
-        # print("ALT", [(x.loci, x.mapq, x.score) for x in aln_set.alt_pairs])
-        # print("REF", [(x.loci, x.mapq, x.score) for x in aln_set.ref_pairs])
-        # print("")
-
         if ref_score - alt_score > 1:
-            # aln = aln_set.get_alns("ref")[0]
+            # print(aln_set.name)
+            # print(">REF<")
+            # for aln in aln_set.ref_pairs:
+            #     print(" ", aln.aln1.locus, aln.aln1.cigarstring, aln.aln1.score)
+            #     print(" ", aln.aln2.locus, aln.aln2.cigarstring, aln.aln2.score)
+            #     print(" ", aln.mapq)
+            # print(">ALT<")
+            # for aln in aln_set.alt_pairs:
+            #     print(" ", aln.aln1.locus, aln.aln1.cigarstring, aln.aln1.score)
+            #     print(" ", aln.aln2.locus, aln.aln2.cigarstring, aln.aln2.score)
+            #     print(" ", aln.mapq)
+
             aln = aln_set.ref_pairs[0]
-            if not aln.concordant(read_stats):
-                continue
-            if misc.overlap_many(aln.loci, ref_breakpoint_collection):
-                # if aln_set.name == "ST-E00130:359:HGV3HCCXX:1:1212:21917:44028":
-                #     print(">>>")
-                #     print(aln_set.name, [(x.loci, x.mapq) for x in aln_set.ref_pairs])
-                #     print(">>>")
-                aln_set.supports_allele = "ref"
-                aln_set.support_prob = (1 - mapq.phred_to_prob(ref_score, 10.0))
-                # print(aln_set.name, aln_set.support_prob)
-                aln_set.supporting_aln = aln
-                ref_total += aln_set.support_prob
+            ref_total += set_read_supports_allele(
+                aln_set, aln, "ref", ref_score, read_stats, ref_breakpoint_collection, min_overlap=4)
+            # if not aln.concordant(read_stats):
+            #     continue
+            # if misc.overlap_many(aln.loci, ref_breakpoint_collection):
+            #     aln_set.supports_allele = "ref"
+            #     aln_set.support_prob = (1 - mapq.phred_to_prob(ref_score, 10.0))
+            #     aln_set.supporting_aln = aln
+            #     ref_total += aln_set.support_prob
         elif alt_score - ref_score > 1:
             aln = aln_set.alt_pairs[0]
-            if not aln.concordant(read_stats):
-                continue
-                # print("a")
-                # print(" ", [(x.loci, x.score, x.aln1.cigarstring, x.aln2.cigarstring) for x in aln_set.alt_pairs])
-                # print(" ", [(x.loci, x.score, x.aln1.cigarstring, x.aln2.cigarstring) for x in aln_set.ref_pairs])
+            alt_total += set_read_supports_allele(
+                aln_set, aln, "alt", alt_score, read_stats, alt_breakpoint_collection, min_overlap=4)
+            # if not aln.concordant(read_stats):
+            #     continue
 
-
-            # print(ref_score, alt_score)
-            # print(aln.locus, alt_breakpoint_collection)
-            # aln = aln_set.get_alns("alt")[0]
-            if misc.overlap_many(aln.loci, alt_breakpoint_collection):
-                aln_set.supports_allele = "alt"
-                aln_set.support_prob = (1 - mapq.phred_to_prob(alt_score, 10.0))
-                aln_set.supporting_aln = aln
-                alt_total += aln_set.support_prob
+            # if misc.overlap_many(aln.loci, alt_breakpoint_collection):
+            #     aln_set.supports_allele = "alt"
+            #     aln_set.support_prob = (1 - mapq.phred_to_prob(alt_score, 10.0))
+            #     aln_set.supporting_aln = aln
+            #     alt_total += aln_set.support_prob
 
     return ref_total, alt_total
 

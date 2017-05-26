@@ -187,6 +187,15 @@ class Locus:
         """ same as overlaps, but considers the opposite strand """
         return self.getAntisenseLocus().overlaps(otherLocus)
 
+    def overlapsAnysense(self,otherLocus):
+        """ Returns ``True`` if this locus overlaps ``otherLocus`` """
+        if self.chrom!=otherLocus.chrom:
+            return False
+        elif self.start > otherLocus.end or otherLocus.start > self.end:
+            return False
+        else:
+            return True
+
     def __hash__(self):
         """ This method allows Locus instances to be entered as keys into a dict, and is integral to
         speedy access to loci through the LocusCollection. Note that multiple loci can share the same hash

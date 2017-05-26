@@ -106,13 +106,11 @@ class DataHub(object):
 
         # TODO: fix this...
         if False:
-            for sample_name, sample in self.samples.items():
-                sample.out_alt_bam = pysam.AlignmentFile("{}.alt.realigned.bam".format(sample_name), "wb",
-                    header=_get_bam_headers(self.variant, "alt"))
-                sample.out_ref_bam = pysam.AlignmentFile("{}.ref.realigned.bam".format(sample_name), "wb",
-                    header=_get_bam_headers(self.variant, "ref"))
-
-                    # template=sample.bam)
+            # for sample_name, sample in self.samples.items():
+            #     sample.out_alt_bam = pysam.AlignmentFile("{}.alt.realigned.bam".format(sample_name), "wb",
+            #         header=_get_bam_headers(self.variant, "alt"))
+            #     sample.out_ref_bam = pysam.AlignmentFile("{}.ref.realigned.bam".format(sample_name), "wb",
+            #         header=_get_bam_headers(self.variant, "ref"))
 
             for allele in ["alt", "ref"]:
                 with open("{}_genome.{}.fa".format(allele, variant.short_name()), "w") as genome_file:

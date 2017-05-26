@@ -58,11 +58,11 @@ PARAMS = {
 }
 
 class GenomeSource(object):
-    def __init__(self, names_to_contigs, blacklist=None, aligner_type="bwa"):
+    def __init__(self, names_to_contigs, aligner_type="bwa"):
         self.names_to_contigs = collections.OrderedDict(names_to_contigs)
         self._bwa = None
         self._ssw = None
-        self.blacklist = blacklist
+        self._blacklist = None
 
         self.aligner_type = aligner_type
 
@@ -74,6 +74,18 @@ class GenomeSource(object):
 
     def keys(self):
         return list(self.names_to_contigs.keys())
+
+    @property
+    def blacklist(self):
+        return self._blacklist
+
+    @blacklist.setter
+    def blacklist(self, blacklist_loci):
+        self._blacklist = []
+
+        for locus in blacklist_loci:
+            cur_chrom = match_chrom_format(locus.chrom, list(self.keys()))
+            self._blacklist.append(misc.Locus(cur_chrom, locus.start, locus.end, locus.strand))
 
     # @profile
     def align(self, read):
@@ -91,6 +103,8 @@ class GenomeSource(object):
 
             aln.chrom = self.keys()[aln.reference_id]
 
+            # if self.blacklist is not None:
+                # print("....", aln.locus, self.blacklist, misc.overlaps(aln.locus, self.blacklist))
             if self.blacklist is None or not misc.overlaps(aln.locus, self.blacklist):
                 aln.source = self
                 aln.chrom = self.keys()[aln.reference_id]
@@ -167,11 +181,11 @@ class GenomeSource(object):
 
 class FastaGenomeSource(GenomeSource):
     """ pickle-able wrapper for pyfaidx.Fasta """
-    def __init__(self, path, blacklist=None, aligner_type="bwa"):
+    def __init__(self, path, aligner_type="bwa"):
         self.path = path
         self._fasta = None
         self._bwa = None
-        self.blacklist = blacklist
+        self._blacklist = None
         self.aligner_type = aligner_type
         
     def get_seq(self, chrom, start, end, strand):
@@ -184,7 +198,7 @@ class FastaGenomeSource(GenomeSource):
 
     def keys(self):
         return list(self.fasta.keys())
-        
+
     @property
     def fasta(self):
         if self._fasta is None:

@@ -216,6 +216,7 @@ class ReadRenderer(object):
         #     curColor = "#EEEEEE"
 
         self.svg.rect(pstart, yoffset-(self.rowHeight/2.0)+thinLineWidth/2.0, pend-pstart, thinLineWidth, fill=curColor, **extras)
+        _overlap_start_x = pstart
 
         positionCounts = collections.Counter()
 
@@ -259,6 +260,9 @@ class ReadRenderer(object):
         highlightOverlaps = True
         if highlightOverlaps:# and not isFlanking:
             self._highlightOverlaps(positionCounts, ystart, height, regionID, alignmentSet.name)#, isFlanking)
+
+        self.svg.text(_overlap_start_x, yoffset, "{},{}".format(alignmentSet.mapq, alignmentSet.overlap),
+            anchor="end")
 
 
     def _drawCigar(self, alignment, yoffset, height):#, isFlanking):
