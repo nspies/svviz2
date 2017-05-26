@@ -109,6 +109,8 @@ class ReadStatistics(object):
 
         self._insertSizeScores = {} # cache
         self._max_insert_size = None
+        self._min_reasonable_insert_size = None
+        self._max_reasonable_insert_size = None
 
         try:
             results = sampleInsertSizes(bam)
@@ -120,9 +122,10 @@ class ReadStatistics(object):
 
             # self.insertSizes, self.orientations, self.readLengths, self.number_mismatches, self.discordant_frac = results
             if len(self.insertSizes) > 1:
-                logger.info("  insert size mean: {:.2f} std: {:.2f} min:{} max:{}".format(
+                logger.info("  insert size mean: {:.2f} std: {:.2f} min:{}({}) max:{}({})".format(
                     numpy.mean(self.insertSizes), numpy.std(self.insertSizes),
-                    numpy.min(self.insertSizes), self.maxInsertSize()))
+                    numpy.min(self.insertSizes), self.min_reasonable_insert_size(),
+                    self.maxInsertSize(), self.max_reasonable_insert_size()))
                 logger.info("  discordant: {:.4f}".format(self.discordant_frac))
         except Exception as e:
             raise
@@ -145,6 +148,16 @@ class ReadStatistics(object):
         # return log10_pair_prob
 
         pair.score = log10_pair_prob
+
+    def min_reasonable_insert_size(self):
+        if self._min_reasonable_insert_size is None:
+            self._min_reasonable_insert_size = int(numpy.percentile(self.insertSizes, 0.025))
+        return self._min_reasonable_insert_size
+
+    def max_reasonable_insert_size(self):
+        if self._max_reasonable_insert_size is None:
+            self._max_reasonable_insert_size = int(numpy.percentile(self.insertSizes, 97.5))
+        return self._max_reasonable_insert_size
 
     def scoreInsertSize(self, isize):
         if not self.hasInsertSizeDistribution():

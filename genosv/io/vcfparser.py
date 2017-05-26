@@ -52,14 +52,14 @@ class VCFParser(object):
 
 
 def get_sequence_defined(variant, datahub):
-    print("::", variant.id, variant.start, variant.stop, len(variant.ref))
+    # print("::", variant.id, variant.start, variant.stop, len(variant.ref))
     assert variant.stop-variant.start == len(variant.ref)
 
     sdv = variants.SequenceDefinedVariant(
         variant.chrom, variant.start, variant.stop-1,
         variant.alts[0], datahub, variant.id)
 
-    print(sdv)
+    # print(sdv)
     return sdv
 
 def get_breakend(first, second, datahub):

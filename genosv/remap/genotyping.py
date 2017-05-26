@@ -56,6 +56,14 @@ def set_read_supports_allele(aln_set, aln, allele, score, read_stats, breakpoint
     assert len(aln.loci) == 1
     aln_locus = aln.loci[0]
 
+    try:
+        if aln.insert_size > read_stats.max_reasonable_insert_size():
+            return 0
+        if aln.insert_size < read_stats.min_reasonable_insert_size():
+            return 0
+    except IndexError:
+        pass
+
     overlap = get_best_overlap(aln_locus, breakpoint_collection)
 
     # print(overlap, aln_locus, breakpoint_collection)
@@ -71,7 +79,6 @@ def set_read_supports_allele(aln_set, aln, allele, score, read_stats, breakpoint
 
 def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_collection, read_stats):
     def get_best_score(_aln_set, _allele):
-        # alignments = _aln_set.get_alns(_allele)
         if _allele == "ref":
             alignments = _aln_set.ref_pairs
         elif _allele == "alt":
@@ -108,25 +115,15 @@ def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_
             aln = aln_set.ref_pairs[0]
             ref_total += set_read_supports_allele(
                 aln_set, aln, "ref", ref_score, read_stats, ref_breakpoint_collection, min_overlap=4)
-            # if not aln.concordant(read_stats):
-            #     continue
-            # if misc.overlap_many(aln.loci, ref_breakpoint_collection):
-            #     aln_set.supports_allele = "ref"
-            #     aln_set.support_prob = (1 - mapq.phred_to_prob(ref_score, 10.0))
-            #     aln_set.supporting_aln = aln
-            #     ref_total += aln_set.support_prob
+
+
         elif alt_score - ref_score > 1:
             aln = aln_set.alt_pairs[0]
             alt_total += set_read_supports_allele(
                 aln_set, aln, "alt", alt_score, read_stats, alt_breakpoint_collection, min_overlap=4)
-            # if not aln.concordant(read_stats):
-            #     continue
 
-            # if misc.overlap_many(aln.loci, alt_breakpoint_collection):
-            #     aln_set.supports_allele = "alt"
-            #     aln_set.support_prob = (1 - mapq.phred_to_prob(alt_score, 10.0))
-            #     aln_set.supporting_aln = aln
-            #     alt_total += aln_set.support_prob
+
+
 
     return ref_total, alt_total
 

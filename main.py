@@ -26,6 +26,9 @@ def get_datahub():
 def run(datahub):
     """ this runs the app on the provided datahub """
     for variant in datahub.get_variants():
+        # if "86,868,786" not in str(variant):
+            # print("skipping", str(variant))
+            # continue
         t0 = time.time()
         temp_storage = datahub.genotype_cur_variant()
         t1 = time.time()
