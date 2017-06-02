@@ -61,7 +61,7 @@ def set_read_supports_allele(aln_set, aln, allele, score, read_stats, breakpoint
             return 0
         if aln.insert_size < read_stats.min_reasonable_insert_size():
             return 0
-    except IndexError:
+    except (IndexError, AttributeError):
         pass
 
     overlap = get_best_overlap(aln_locus, breakpoint_collection)
