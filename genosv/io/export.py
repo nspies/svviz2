@@ -246,27 +246,27 @@ def getExportFormat(args):
     exportFormat = exportFormat.lower()
     return exportFormat
 
-def getExportConverter(args, exportFormat):
-    if args.converter == "webkittopdf" and exportFormat=="png":
+def getExportConverter(exportFormat, requested_converter=None):
+    if requested_converter == "webkittopdf" and exportFormat=="png":
         logging.error("webkitToPDF does not support export to PNG; use librsvg or inkscape instead, or "
             "export to PDF")
         sys.exit(1)
 
-    if exportFormat == "png" and args.converter is None:
+    if exportFormat == "png" and requested_converter is None:
         return "librsvg"
 
-    if args.converter == "rsvg-convert":
+    if requested_converter == "rsvg-convert":
         return "librsvg"
 
-    if args.converter in [None, "webkittopdf"]:
+    if requested_converter in [None, "webkittopdf"]:
         if checkWebkitToPDF():
             return "webkittopdf"
 
-    if args.converter in [None, "librsvg"]:
+    if requested_converter in [None, "librsvg"]:
         if checkRSVGConvert():
             return "librsvg"
 
-    if args.converter in [None, "inkscape"]:
+    if requested_converter in [None, "inkscape"]:
         if checkInkscape():
             return "inkscape"
 
