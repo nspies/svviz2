@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
+import sys
+
+if sys.version_info < (3, 3):
+    raise RuntimeError("Python version >= 3.3 required.")
+
 
 setup(name="genosv",
       version="0.1",
