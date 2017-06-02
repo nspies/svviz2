@@ -92,7 +92,7 @@ class GenomeSource(object):
         alns = []
         qualities = read.original_qualities()
 
-        raw_alns = self.aligner.align(read.original_sequence(), hardclip=False)
+        raw_alns = self.aligner.align(read.original_sequence())
 
         for aln in raw_alns:
             aln = Alignment(aln)

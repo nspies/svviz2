@@ -40,8 +40,3 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
     datahub = get_datahub()
     run(datahub)
-
-
-
-if __name__ == '__main__':
-    main()
