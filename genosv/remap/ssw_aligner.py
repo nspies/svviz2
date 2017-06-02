@@ -16,9 +16,7 @@ class Aligner(object):
             self.names_to_aligners[name] = ssw_wrap.Aligner(
                 contig, report_cigar=True, report_secondary=True)
 
-    def align(self, seq, hardclip):
-        if hardclip:
-            raise Exception("not yet implemented")
+    def align(self, seq):
         alns = []
         revseq = reverse_comp(seq)
 

@@ -125,6 +125,9 @@ class DataHub(object):
     def set_args(self, args):
         self.args = args
 
+        self.aligner_type = args.aligner
+        assert self.aligner_type in ["bwa", "ssw"]
+        
         self.genome = genomesource.FastaGenomeSource(args.ref)
 
         for bamPath in self.args.bam:
