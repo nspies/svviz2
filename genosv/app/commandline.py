@@ -33,6 +33,11 @@ def parse_args(input_args):
         "The aligner to use for realigning reads; either ssw (smith-waterman) or \n"
         "bwa (default=bwa)")
 
+    optional_args.add_argument("--only-realign-locally", action="store_true", help=
+        "Only when using bwa as the aligner backend, when this option is enabled,\n"
+        "reads will only be aligned locally around the breakpoints and not also against\n"
+        "the full reference genome (default: False)")
+
     if len(input_args)<1:
         parser.print_help()
         sys.exit(1)

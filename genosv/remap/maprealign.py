@@ -9,7 +9,7 @@ def map_realign_pairs(batch, datahub, sample):
     ref_genome_sources = [datahub.local_ref_genome_source]
     alt_genome_sources = [datahub.local_alt_genome_source]
 
-    if datahub.aligner_type == "bwa":
+    if datahub.aligner_type == "bwa" and not datahub.args.only_realign_locally:
         ref_genome_sources.append(datahub.genome)
 
     for genome_source in ref_genome_sources+alt_genome_sources:
