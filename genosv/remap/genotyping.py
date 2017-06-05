@@ -71,7 +71,8 @@ def set_read_supports_allele(aln_set, aln, allele, score, read_stats, breakpoint
         aln_set.supports_allele = allele
         aln_set.support_prob = (1 - mapq.phred_to_prob(score, 10.0))
         aln_set.supporting_aln = aln
-        aln_set.overlap = overlap
+        # aln_set.overlap = overlap
+        aln.set_tag("OV", overlap)
         aln.overlap = overlap ## TODO: TEMP
         return aln_set.support_prob
 

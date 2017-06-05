@@ -23,14 +23,6 @@ def name_from_bam_path(bampath):
 # def name_from_bed_path(bampath):
 #     return os.path.basename(bampath).replace(".bed", "").replace(".sorted", "").replace(".sort", "").replace(".", "_").replace("+", "_").replace(".gz", "")
 
-def _get_bam_headers(variant, allele):
-    seqs = variant.seqs(allele)
-    header = {"HD":{"VN":1.3,"SO":"unsorted"}}
-    sq = []
-    for name in seqs:
-        sq.append({"SN":name.replace("/", "__"), "LN":len(seqs[name])})
-    header["SQ"] = sq
-    return header
 
 
 class DataHub(object):
@@ -73,14 +65,20 @@ class DataHub(object):
                 ref_count += cur_ref_count
                 alt_count += cur_alt_count
 
-                if self.args.savereads:
-                    saverealignments.save_realignments(aln_sets, sample, self)
+                # if self.args.savereads:
+                    # saverealignments.save_realignments(aln_sets, sample, self)
 
-                temp_storage[sample_name].extend(aln_sets)
+                # temp_storage[sample_name].extend(aln_sets)
+
+                sample.add_realignments(aln_sets)
 
             print("REF:", ref_count, "ALT:", alt_count)
 
-        return temp_storage
+            sample.finish_writing_realignments()
+
+            # bam_sort_index(sample.ref_bam_path)
+            # bam_sort_index(sample.alt_bam_path)
+        # return temp_storage
 
     def __getstate__(self):
         """ allows pickling of DataHub()s """
@@ -106,23 +104,26 @@ class DataHub(object):
         self.local_alt_genome_source = genomesource.GenomeSource(
             self.variant.seqs("alt"), aligner_type=self.aligner_type)
 
-        if self.args.savereads:
-            for sample_name, sample in self.samples.items():
-                sample.alt_bam_path = os.path.join(
-                    self.args.outdir, "{}.{}.alt.bam".format(variant.short_name(), sample_name))
-                sample.out_alt_bam = pysam.AlignmentFile(sample.alt_bam_path, "wb",
-                    header=_get_bam_headers(self.variant, "alt"))
+        # TODO: if savereads, then save to a proper file, otherwise save to temporary space
+        # ... or just always save
+        # if self.args.savereads:
 
-                sample.ref_bam_path = os.path.join(
-                    self.args.outdir, "{}.{}.ref.bam".format(variant.short_name(), sample_name))
-                sample.out_ref_bam = pysam.AlignmentFile(sample.ref_bam_path, "wb",
-                    header=_get_bam_headers(self.variant, "ref"))
+        for sample_name, sample in self.samples.items():
+            for allele in ["ref", "alt"]:
+                sample.outbam_paths[allele] = os.path.join(
+                    self.args.outdir,
+                    ".".join([variant.short_name(), sample_name, allele, "bam"]))
 
-            for allele in ["alt", "ref"]:
-                outpath = os.path.join(self.args.outdir, "{}.genome.{}.fa".format(variant.short_name(), allele))
-                with open(outpath, "w") as genome_file:
-                    for name, seq in self.variant.seqs(allele).items():
-                        genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
+            # sample.outbam_paths["ref"] = os.path.join(
+            #     self.args.outdir, "{}.{}.ref.bam".format(variant.short_name(), sample_name))
+
+
+
+        for allele in ["alt", "ref"]:
+            outpath = os.path.join(self.args.outdir, "{}.genome.{}.fa".format(variant.short_name(), allele))
+            with open(outpath, "w") as genome_file:
+                for name, seq in self.variant.seqs(allele).items():
+                    genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
 
 
 
@@ -150,7 +151,7 @@ class DataHub(object):
                     name = curname
                     break
 
-            sample = Sample(name, bamPath)
+            sample = Sample(name, bamPath, self)
             self.samples[name] = sample
 
         # if self.args.annotations:

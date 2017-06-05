@@ -7,3 +7,5 @@ def bam_sort_index(unsorted_bam_path):
     pysam.index(sorted_bam_path)
 
     os.remove(unsorted_bam_path)
+
+    return sorted_bam_path

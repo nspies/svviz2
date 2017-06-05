@@ -86,7 +86,7 @@ class TrackCompositor(object):
         hasTrackWithReads = False
 
         for track, name in zip(tracks, names):
-            if len(track.alignmentSets) == 0:
+            if track.bam.count() == 0:
                 height = 20
                 viewbox = '0 0 {width} {height}" preserveAspectRatio="xMinYMin'.format(width=track.width, height=track.height)
             else:

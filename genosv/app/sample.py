@@ -4,15 +4,25 @@ import pysam
 import sys
 
 from genosv.io.readstatistics import ReadStatistics
+from genosv.utility.bam import bam_sort_index
 
 logger = logging.getLogger(__name__)
 
 
+def _get_bam_headers(variant, allele):
+    seqs = variant.seqs(allele)
+    header = {"HD":{"VN":1.3,"SO":"unsorted"}}
+    sq = []
+    for name in seqs:
+        sq.append({"SN":name.replace("/", "__"), "LN":len(seqs[name])})
+    header["SQ"] = sq
+    return header
 
 
 class Sample(object):
-    def __init__(self, name, bam_path):
+    def __init__(self, name, bam_path, datahub):
         self.name = name
+        self.datahub = datahub
 
         self.single_ended = False
         self.orientations = None
@@ -21,7 +31,8 @@ class Sample(object):
         self.bam_path = bam_path
         self._bam = None
 
-        self.outbam = None
+        self.outbams = {}
+        self.outbam_paths = {}
 
         self.read_statistics = ReadStatistics(self.bam)
         if self.read_statistics.orientations == "any":
@@ -76,6 +87,50 @@ class Sample(object):
                 logger.error("ERROR: Need to create index for input bam file: {}".format(self.bam_path))
                 sys.exit(0)
         return self._bam
+
+    def add_realignments(self, aln_sets):
+        # for allele in ["alt", "ref"]:
+        #     if not allele in self.outbams:
+        #         self.outbams[allele] = pysam.AlignmentFile(self.outbam_paths[allele], "wb",
+        #             header=_get_bam_headers(self.variant, "ref"))
+
+        for allele in ["alt", "ref"]:
+            self.outbam(allele, "w")
+
+        for aln_set in aln_sets:
+            if aln_set.supports_allele != "amb":
+                aln_set.supporting_aln.fix_flags()
+
+                outbam = self.outbam(aln_set.supports_allele, "w")
+                if self.single_ended:
+                    outbam.write(aln_set.supporting_aln._read)
+                else:
+                    outbam.write(aln_set.supporting_aln.aln1._read)
+                    outbam.write(aln_set.supporting_aln.aln2._read)
+
+            # elif aln_set.supports_allele == "alt":
+            #     if self.single_ended:
+            #         self.out_alt_bam.write(aln_set.supporting_aln._read)
+            #     else:
+            #         self.out_alt_bam.write(aln_set.supporting_aln.aln1._read)
+            #         self.out_alt_bam.write(aln_set.supporting_aln.aln2._read)
+
+    def finish_writing_realignments(self):
+        for allele in ["ref", "alt"]:
+            self.outbams[allele].close()
+            self.outbams.pop(allele)
+            bam_sort_index(self.outbam_paths[allele])
+
+    def outbam(self, allele, mode):
+        if mode == "w":
+            if not allele in self.outbams:
+                self.outbams[allele] = pysam.AlignmentFile(self.outbam_paths[allele], "wb",
+                    header=_get_bam_headers(self.datahub.variant, allele))
+            return self.outbams[allele]
+
+        assert not allele in self.outbams, "forgot to close outbam before re-opening"
+
+        return pysam.AlignmentFile(self.outbam_paths[allele].replace(".bam", ".sorted.bam"))
 
     # def set_bwa_params(self, realigner):
     #     for bwa in [realigner.ref_mapper, realigner.alt_mapper]:

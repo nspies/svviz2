@@ -226,3 +226,6 @@ class AlignmentPair(object):
 
 
 
+    def set_tag(self, key, value):
+        self.aln1.set_tag(key, value)
+        self.aln2.set_tag(key, value)

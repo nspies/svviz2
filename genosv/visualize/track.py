@@ -1,6 +1,7 @@
 import collections
 import itertools
 import math
+import numpy
 import re
 from genosv.visualize.svg import SVG
 # from svviz import utilities
@@ -184,27 +185,23 @@ class ReadRenderer(object):
         self.colorCigar = colorCigar
 
         self.nucColors = {"A":"blue", "C":"orange", "G":"green", "T":"black", "N":"gray"}
-        self.colorsByStrand = {"+":"purple", "-":"red"}
+        self.colorsByStrand = {False:"purple", True:"red"}
         self.insertionColor = "cyan"
         self.deletionColor = "gray"
         self.overlapColor = "lime"
 
-    def render(self, alignmentSet):
-        yoffset = alignmentSet.yoffset
-        # if len(set([x.regionID for x in alignmentSet.getAlignments()]))!=1:
-        #     global NYIWarned
-            
-        #     if not NYIWarned:            
-        #         NYIWarned = True
-        #         print("\n"*5)
-        #         print("WARNING! Not yet implemented: ambiguous track display of read pairs mapping to different chromosomes")
-        #         print("\n"*5)
-        #     return
+    def render(self, alns, layout):
+        # yoffset = alignmentSet.yoffset
+        read_name = alns[0].query_name
+        regionID = alns[0].reference_name
 
-        locus = alignmentSet.loci[0]
-        regionID = locus.chrom#getAlignments()[0].regionID
-        pstart = self.scale.topixels(locus.start, regionID)
-        pend = self.scale.topixels(locus.end, regionID)
+        yoffset = layout[read_name]
+
+        if len(alns) > 1:
+            assert alns[0].reference_id == alns[1].reference_id
+
+        pstart = self.scale.topixels(alns[0].reference_start, regionID)
+        pend = self.scale.topixels(alns[-1].reference_end, regionID)
 
         # isFlanking = (alignmentSet.parentCollection.why == "flanking")
 
@@ -229,23 +226,24 @@ class ReadRenderer(object):
             height = self.rowHeight
 
 
-        # for alignment in alignmentSet.getAlignments():
-        try:
-            alns = [alignmentSet.aln1, alignmentSet.aln2]
-        except AttributeError:
-            alns = [alignmentSet]
+        # # for alignment in alignmentSet.getAlignments():
+        # try:
+        #     alns = [alignmentSet.aln1, alignmentSet.aln2]
+        # except AttributeError:
+        #     alns = [alignmentSet]
 
-        for end in alns:
-            alignment = end.locus
-            alignment.cigar = end.cigarstring
-            alignment.seq = end.query_sequence
-            for position in range(alignment.start, alignment.end+1):
+        for aln in alns:
+            # alignment = end.locus
+            # alignment.cigar = end.cigarstring
+            # alignment.seq = end.query_sequence
+
+            for position in range(aln.reference_start, aln.reference_end+1):
                 positionCounts[position] += 1
 
-            pstart = self.scale.topixels(alignment.start, regionID)
-            pend = self.scale.topixels(alignment.end, regionID)
+            pstart = self.scale.topixels(aln.reference_start, regionID)
+            pend = self.scale.topixels(aln.reference_end, regionID)
 
-            curColor = self.colorsByStrand[alignment.strand]
+            curColor = self.colorsByStrand[aln.is_reverse]
             extras = {"class":"read"}#, "data-cigar":alignment.cigar,"data-readid":alignment.name}
             # if isFlanking:
             #     extras["class"] = "read flanking"
@@ -255,13 +253,13 @@ class ReadRenderer(object):
                           **extras)
 
             if self.colorCigar:
-                self._drawCigar(alignment, ystart, height)#, isFlanking)
+                self._drawCigar(aln, ystart, height)#, isFlanking)
 
         highlightOverlaps = True
         if highlightOverlaps:# and not isFlanking:
-            self._highlightOverlaps(positionCounts, ystart, height, regionID, alignmentSet.name)#, isFlanking)
+            self._highlightOverlaps(positionCounts, ystart, height, regionID, aln.query_name)#, isFlanking)
 
-        self.svg.text(_overlap_start_x, yoffset, "{},{}".format(alignmentSet.mapq, alignmentSet.overlap),
+        self.svg.text(_overlap_start_x, yoffset, "{},{}".format(aln.mapq, aln.get_tag("OV")),
             anchor="end")
 
 
@@ -269,25 +267,27 @@ class ReadRenderer(object):
         eachNuc = False # this gets to be computationally infeasible to display in the browser
         pattern = re.compile('([0-9]*)([MIDNSHP=X])')
 
-        genomePosition = alignment.start
+        genomePosition = alignment.reference_start
         sequencePosition = 0
 
-        chromPartSeq = self.chromPartsCollection.get_seq(alignment.chrom)
+        chromPartSeq = self.chromPartsCollection.get_seq(alignment.reference_name)
 
         extras = {}
         # if isFlanking:
             # extras = {"class":"flanking"}
 
-        for length, code in pattern.findall(alignment.cigar):
+        # for length, code in pattern.findall(alignment.cigar):
+        alnseq = alignment.seq
+        for code, length in alignment.cigartuples:
             length = int(length)
-            if code == "M":
+            if code == 0: #"M":
                 for i in range(length):
-                    curstart = self.scale.topixels(genomePosition+i, alignment.chrom)
-                    curend = self.scale.topixels(genomePosition+i+1, alignment.chrom)
+                    curstart = self.scale.topixels(genomePosition+i, alignment.reference_name)
+                    curend = self.scale.topixels(genomePosition+i+1, alignment.reference_name)
 
-                    color = self.nucColors[alignment.seq[sequencePosition+i]]
+                    color = self.nucColors[alnseq[sequencePosition+i]]
 
-                    alt = alignment.seq[sequencePosition+i]
+                    alt = alnseq[sequencePosition+i]
                     ref = chromPartSeq[genomePosition+i]
                     
                     if eachNuc or alt!=ref:
@@ -295,15 +295,15 @@ class ReadRenderer(object):
 
                 sequencePosition += length
                 genomePosition += length
-            elif code in "D":
-                curstart = self.scale.topixels(genomePosition, alignment.chrom)
-                curend = self.scale.topixels(genomePosition+length+1, alignment.chrom)
+            elif code == 2: #in "D":
+                curstart = self.scale.topixels(genomePosition, alignment.reference_name)
+                curend = self.scale.topixels(genomePosition+length+1, alignment.reference_name)
                 self.svg.rect(curstart, yoffset, curend-curstart, height, fill=self.deletionColor, **extras)
 
                 genomePosition += length
-            elif code in "IHS":
-                curstart = self.scale.topixels(genomePosition-0.5, alignment.chrom)
-                curend = self.scale.topixels(genomePosition+0.5, alignment.chrom)
+            elif code in [1, 4, 5]: #"IHS":
+                curstart = self.scale.topixels(genomePosition-0.5, alignment.reference_name)
+                curend = self.scale.topixels(genomePosition+0.5, alignment.reference_name)
                 self.svg.rect(curstart, yoffset, curend-curstart, height, fill=self.insertionColor, **extras)
 
                 sequencePosition += length
@@ -326,8 +326,9 @@ class ReadRenderer(object):
                 **{"class":"read", "data-readid":readID})
 
 
+
 class Track(object):
-    def __init__(self, chromPartsCollection, alignmentSets, height, width, variant, allele, thickerLines, colorCigar):
+    def __init__(self, chromPartsCollection, bam, height, width, variant, allele, thickerLines, colorCigar, paired):
         self.chromPartsCollection = chromPartsCollection
         self.height = height
         self.width = width
@@ -339,7 +340,7 @@ class Track(object):
 
         self.readRenderer = ReadRenderer(self.rowHeight, self.scale, self.chromPartsCollection, thickerLines, colorCigar)
 
-        self.alignmentSets = alignmentSets
+        self.bam = bam
 
         self.svg = None
         self.rendered = None
@@ -355,6 +356,10 @@ class Track(object):
 
         self.thickerLines = thickerLines
 
+        self.layout = {}
+        self.paired = paired
+
+        # self.mismatch_counts = MismatchCounts(chromPartsCollection)
 
     def findRow(self, start, end, regionID):
         for currow in range(len(self.rows)):
@@ -367,17 +372,17 @@ class Track(object):
 
         return currow
 
-    def getAlignments(self):
-        # check which reads are overlapping (self.gstart, self.gend)
-        # sorting by name makes the layout process deterministic
-        regionIDsToPositions = dict((part.id, i) for i, part in enumerate(self.chromPartsCollection))
+    # def getAlignments(self):
+    #     # check which reads are overlapping (self.gstart, self.gend)
+    #     # sorting by name makes the layout process deterministic
+    #     regionIDsToPositions = dict((part.id, i) for i, part in enumerate(self.chromPartsCollection))
 
-        def sortKey(alnSet):
-            locus = alnSet.loci[0]
-            return (regionIDsToPositions[locus.chrom], 
-                    locus.start, locus.end, alnSet.name)
+    #     def sortKey(alnSet):
+    #         locus = alnSet.loci[0]
+    #         return (regionIDsToPositions[locus.chrom], 
+    #                 locus.start, locus.end, alnSet.name)
 
-        return sorted(self.alignmentSets, key=sortKey)
+    #     return sorted(self.alignmentSets, key=sortKey)
 
     def dolayout(self):
         self.rows = [None]#*numRows
@@ -385,31 +390,31 @@ class Track(object):
         self.xmin = 1e100
         self.xmax = 0
 
-        for alignmentSet in self.getAlignments():
-            # if len(alignmentSet.getAlignments()) < 2:
-                # continue
+        for regionID in self.bam.references:
+            cur_read_coords = collections.defaultdict(list)
 
-            assert len(alignmentSet.loci) == 1
+            for read in self.bam.fetch(reference=regionID):
+                cur_read_coords[read.query_name].append((read.reference_start, read.reference_end))
 
-            locus = alignmentSet.loci[0]
-            # regionIDs = set([x.chrom for x in alignmentSet.loci])
-            # assert self.allele=="amb" or len(regionIDs)==1, alignmentSet.loci
-            regionID = locus.chrom#regionIDs.pop()
+            for read_name, coords in cur_read_coords.items():
+                start = coords[0][0]
+                end = coords[-1][1]
 
-            start = self.scale.topixels(locus.start, regionID)
-            end = self.scale.topixels(locus.end, regionID)
+                start = self.scale.topixels(start, regionID)
+                end = self.scale.topixels(end, regionID)
 
-            currow = self.findRow(start, end, regionID)
-            yoffset = (self.rowHeight+self.rowMargin) * currow
-            alignmentSet.yoffset = yoffset
+                currow = self.findRow(start, end, regionID)
+                yoffset = (self.rowHeight+self.rowMargin) * currow
+                self.layout[read_name] = yoffset
 
-            self.xmin = min(self.xmin, self.scale.topixels(locus.start, regionID))
-            self.xmax = max(self.xmax, self.scale.topixels(locus.end, regionID))
+                self.xmin = min(self.xmin, start)
+                self.xmax = max(self.xmax, end)
 
         self.height = (self.rowHeight+self.rowMargin) * len(self.rows)
 
     def render(self):        
-        if len(self.getAlignments()) == 0:
+        # if len(self.getAlignments()) == 0:
+        if self.bam.count() == 0:
             xmiddle = self.scale.pixelWidth / 2.0
 
             self.height = xmiddle/20.0
@@ -447,13 +452,26 @@ class Track(object):
             self.height+40, opacity=0.0, zindex=0)
         self.rendered = str(self.svg)
 
-        alnSets = self.getAlignments()
+        # alnSets = self.getAlignments()
         # flankingAlignments = [alnSet for alnSet in alnSets if alnSet.parentCollection.why == "flanking"]
         # nonFlankingAlignments = [alnSet for alnSet in alnSets if alnSet.parentCollection.why != "flanking"]
 
-        for alignmentSet in alnSets:#flankingAlignments+nonFlankingAlignments:
-            self.readRenderer.render(alignmentSet)
+        # for alignmentSet in alnSets:#flankingAlignments+nonFlankingAlignments:
+            # self.readRenderer.render(alignmentSet)
 
+        for regionID in self.bam.references:
+            read_buffer = {}
+            for read in self.bam.fetch(reference=regionID):
+                if self.paired and read.query_name in read_buffer:
+                    other_read = read_buffer.pop(read.query_name)
+                    cur_reads = [other_read, read]
+                elif self.paired:
+                    read_buffer[read.query_name] = read
+                    continue
+                else:
+                    cur_reads = [read]
+
+                self.readRenderer.render(cur_reads, self.layout)
 
         return self.rendered
 

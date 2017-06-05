@@ -37,8 +37,8 @@ def parse_args(input_args):
     optional_args.add_argument("--format", type=visualization_file_format, default="pdf", help=
         "format for output visualizations; must be one of pdf, png or svg (default: pdf)")
 
-    optional_args.add_argument("--savereads", action="store_true", help=
-        "output the read realignments against the appropriate alt or ref allele (default: false)")
+    # optional_args.add_argument("--savereads", action="store_true", help=
+    #     "output the read realignments against the appropriate alt or ref allele (default: false)")
 
     optional_args.add_argument("--batch-size", type=int, default=10000, help=
         "Number of reads to analyze at once; larger batch-size values may run more quickly \n"
@@ -52,6 +52,9 @@ def parse_args(input_args):
         "Only when using bwa as the aligner backend, when this option is enabled,\n"
         "reads will only be aligned locally around the breakpoints and not also against\n"
         "the full reference genome (default: False)")
+
+    optional_args.add_argument("--render-only", action="store_true", help=
+        "")
 
     if len(input_args)<1:
         parser.print_help()

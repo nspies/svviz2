@@ -29,11 +29,15 @@ def run(datahub):
         # if "86,868,786" not in str(variant):
             # print("skipping", str(variant))
             # continue
-        t0 = time.time()
-        temp_storage = datahub.genotype_cur_variant()
-        t1 = time.time()
-        print("TIME:::", t1-t0)
-        visualize.visualize(datahub, temp_storage)
+
+        if not datahub.args.render_only:
+            t0 = time.time()
+            #temp_storage = 
+            datahub.genotype_cur_variant()
+            t1 = time.time()
+            print("TIME:::", t1-t0)
+            
+        visualize.visualize(datahub)#, temp_storage)
 
 def main():
     """ entry point from command line """
