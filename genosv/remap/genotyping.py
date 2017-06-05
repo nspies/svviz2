@@ -2,7 +2,7 @@ import numpy
 
 
 from genosv.remap import mapq
-from genosv.utility import misc
+from genosv.utility import statistics
 
 
 
@@ -14,7 +14,7 @@ def calculate_genotype_likelihoods(ref, alt, priors=[0.05, 0.5, 0.95], max_qual=
     ref = int(ref)
     alt = int(alt)
 
-    log_combo = misc.log_choose(ref+alt, alt)
+    log_combo = statistics.log_choose(ref+alt, alt)
 
     log_prob_homref = log_combo + alt * numpy.log10(priors[0]) + ref * numpy.log10(1-priors[0])
     log_prob_het    = log_combo + alt * numpy.log10(priors[1]) + ref * numpy.log10(1-priors[1])

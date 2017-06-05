@@ -3,7 +3,8 @@ import collections
 
 # from svviz.utilities import Locus, getListDefault
 # import genomesource
-from genosv.utility.misc import Locus, safe_file_name
+from genosv.utility.misc import safe_file_name
+from genosv.utility.intervals import Locus
 from genosv.app import genomesource
 
 

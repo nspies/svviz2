@@ -3,7 +3,7 @@ import logging
 import pyfaidx
 import seqlib
 
-from genosv.utility import misc
+from genosv.utility import intervals, misc
 from genosv.remap import mapq
 from genosv.remap import ssw_aligner
 from genosv.remap.alignment import Alignment
@@ -85,7 +85,7 @@ class GenomeSource(object):
 
         for locus in blacklist_loci:
             cur_chrom = match_chrom_format(locus.chrom, list(self.keys()))
-            self._blacklist.append(misc.Locus(cur_chrom, locus.start, locus.end, locus.strand))
+            self._blacklist.append(intervals.Locus(cur_chrom, locus.start, locus.end, locus.strand))
 
     # @profile
     def align(self, read):
@@ -105,7 +105,7 @@ class GenomeSource(object):
 
             # if self.blacklist is not None:
                 # print("....", aln.locus, self.blacklist, misc.overlaps(aln.locus, self.blacklist))
-            if self.blacklist is None or not misc.overlaps(aln.locus, self.blacklist):
+            if self.blacklist is None or not intervals.overlaps(aln.locus, self.blacklist):
                 aln.source = self
                 aln.chrom = self.keys()[aln.reference_id]
                 self.score_alignment(aln)

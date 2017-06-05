@@ -1,6 +1,7 @@
 import collections
 import pysam
 
+from genosv.utility import intervals
 from genosv.utility import misc
 from genosv.remap import mapq
 
@@ -57,7 +58,7 @@ class Alignment(object):
         # if self.cigartuples[-1][0] == 4:
         #     end -= self.cigartuples[-1][1]
 
-        locus = misc.Locus(chrom, start, end, "-" if self.is_reverse else "+")
+        locus = intervals.Locus(chrom, start, end, "-" if self.is_reverse else "+")
 
         return locus
 
@@ -140,7 +141,7 @@ class AlignmentPair(object):
             chrom = self.aln1.chrom
             start = min(self.aln1.reference_start, self.aln2.reference_start)
             end = max(self.aln1.reference_end, self.aln2.reference_end)
-            locus = misc.Locus(chrom, start, end, "+")
+            locus = intervals.Locus(chrom, start, end, "+")
 
             return [locus]
         else:

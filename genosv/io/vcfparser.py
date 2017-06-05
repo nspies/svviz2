@@ -2,7 +2,7 @@ import logging
 import pysam
 import re
 
-from genosv.utility.misc import Locus
+from genosv.utility.intervals import Locus
 from genosv.app import variants
 
 logger = logging.getLogger(__name__)
