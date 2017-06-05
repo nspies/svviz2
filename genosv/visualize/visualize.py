@@ -1,3 +1,5 @@
+import os
+
 from genosv.visualize import track
 from genosv.io import export
 
@@ -16,8 +18,13 @@ def visualize(datahub, temp_storage):
 
     e = export.TrackCompositor(datahub)
     
-    converter = export.getExportConverter("pdf")
+    file_format = datahub.args.format
+    converter = export.getExportConverter(file_format)
 
-    with open("{}.pdf".format(datahub.variant.short_name()), "wb") as outf:
-        d = export.convertSVG(e.render(), "pdf", converter)
+    outpath = os.path.join(datahub.args.outdir,
+                           "{}.{}".format(datahub.variant.short_name(), file_format))
+    mode = "w" if file_format=="svg" else "wb"
+
+    with open(outpath, mode) as outf:
+        d = export.convertSVG(e.render(), file_format, converter)
         outf.write(d)

@@ -1,5 +1,6 @@
+from genosv.utility.bam import bam_sort_index
+
 def save_realignments(aln_sets, sample, datahub):
-    #TODO: check if we're supposed to save based on arguments
     for aln_set in aln_sets:
         if aln_set.supports_allele != "amb":
             aln_set.supporting_aln.fix_flags()
@@ -20,3 +21,6 @@ def save_realignments(aln_sets, sample, datahub):
 
     sample.out_alt_bam.close()
     sample.out_ref_bam.close()
+
+    bam_sort_index(sample.ref_bam_path)
+    bam_sort_index(sample.alt_bam_path)

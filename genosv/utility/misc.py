@@ -1,6 +1,14 @@
+import errno
+import os
 import string
 
 
+def ensure_dir(directory):
+    try:
+        os.makedirs(directory)
+    except OSError as err:
+        if err.errno != errno.EEXIST:
+            raise
 
 
 def safe_file_name(text):

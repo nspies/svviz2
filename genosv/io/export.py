@@ -297,6 +297,8 @@ def checkInkscape():
 
 
 def convertSVG(insvg, outformat, converter):
+    if outformat == "svg":
+        return insvg
     outdir = tempfile.mkdtemp()
     inpath = "{}/original.svg".format(outdir)
     infile = open(inpath, "w")

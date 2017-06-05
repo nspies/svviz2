@@ -12,6 +12,7 @@ from genosv.io import vcfparser
 from genosv.io import saverealignments
 from genosv.remap import maprealign
 from genosv.remap import genotyping
+from genosv.utility import misc
 
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,8 @@ class DataHub(object):
                 ref_count += cur_ref_count
                 alt_count += cur_alt_count
 
-                # saverealignments.save_realignments(aln_sets, sample, self)
+                if self.args.savereads:
+                    saverealignments.save_realignments(aln_sets, sample, self)
 
                 temp_storage[sample_name].extend(aln_sets)
 
@@ -104,22 +106,24 @@ class DataHub(object):
         self.local_alt_genome_source = genomesource.GenomeSource(
             self.variant.seqs("alt"), aligner_type=self.aligner_type)
 
-        # TODO: fix this...
-        if False:
-            # for sample_name, sample in self.samples.items():
-            #     sample.out_alt_bam = pysam.AlignmentFile("{}.alt.realigned.bam".format(sample_name), "wb",
-            #         header=_get_bam_headers(self.variant, "alt"))
-            #     sample.out_ref_bam = pysam.AlignmentFile("{}.ref.realigned.bam".format(sample_name), "wb",
-            #         header=_get_bam_headers(self.variant, "ref"))
+        if self.args.savereads:
+            for sample_name, sample in self.samples.items():
+                sample.alt_bam_path = os.path.join(
+                    self.args.outdir, "{}.{}.alt.bam".format(variant.short_name(), sample_name))
+                sample.out_alt_bam = pysam.AlignmentFile(sample.alt_bam_path, "wb",
+                    header=_get_bam_headers(self.variant, "alt"))
+
+                sample.ref_bam_path = os.path.join(
+                    self.args.outdir, "{}.{}.ref.bam".format(variant.short_name(), sample_name))
+                sample.out_ref_bam = pysam.AlignmentFile(sample.ref_bam_path, "wb",
+                    header=_get_bam_headers(self.variant, "ref"))
 
             for allele in ["alt", "ref"]:
-                with open("{}_genome.{}.fa".format(allele, variant.short_name()), "w") as genome_file:
+                outpath = os.path.join(self.args.outdir, "{}.genome.{}.fa".format(variant.short_name(), allele))
+                with open(outpath, "w") as genome_file:
                     for name, seq in self.variant.seqs(allele).items():
                         genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
 
-        # with open("ref_genome.{}.fa".format(variant), "w") as ref_genome_file:
-        #     for name, seq in self.variant.ref_seqs().items():
-        #         ref_genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
 
 
     def set_args(self, args):
@@ -129,6 +133,10 @@ class DataHub(object):
         assert self.aligner_type in ["bwa", "ssw"]
         
         self.genome = genomesource.FastaGenomeSource(args.ref)
+
+        if self.args.outdir is None:
+            self.args.outdir = os.getcwd()
+        misc.ensure_dir(self.args.outdir)
 
         for bamPath in self.args.bam:
             name = name_from_bam_path(bamPath)
