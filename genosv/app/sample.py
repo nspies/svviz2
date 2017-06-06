@@ -89,11 +89,6 @@ class Sample(object):
         return self._bam
 
     def add_realignments(self, aln_sets):
-        # for allele in ["alt", "ref"]:
-        #     if not allele in self.outbams:
-        #         self.outbams[allele] = pysam.AlignmentFile(self.outbam_paths[allele], "wb",
-        #             header=_get_bam_headers(self.variant, "ref"))
-
         for allele in ["alt", "ref"]:
             self.outbam(allele, "w")
 
@@ -108,18 +103,15 @@ class Sample(object):
                     outbam.write(aln_set.supporting_aln.aln1._read)
                     outbam.write(aln_set.supporting_aln.aln2._read)
 
-            # elif aln_set.supports_allele == "alt":
-            #     if self.single_ended:
-            #         self.out_alt_bam.write(aln_set.supporting_aln._read)
-            #     else:
-            #         self.out_alt_bam.write(aln_set.supporting_aln.aln1._read)
-            #         self.out_alt_bam.write(aln_set.supporting_aln.aln2._read)
-
     def finish_writing_realignments(self):
-        for allele in ["ref", "alt"]:
+        for allele in ["alt", "ref"]:
             self.outbams[allele].close()
             self.outbams.pop(allele)
-            bam_sort_index(self.outbam_paths[allele])
+            try:
+                bam_sort_index(self.outbam_paths[allele])
+            except:
+                print("ERROR!"*30)
+
 
     def outbam(self, allele, mode):
         if mode == "w":
@@ -131,15 +123,6 @@ class Sample(object):
         assert not allele in self.outbams, "forgot to close outbam before re-opening"
 
         return pysam.AlignmentFile(self.outbam_paths[allele].replace(".bam", ".sorted.bam"))
-
-    # def set_bwa_params(self, realigner):
-    #     for bwa in [realigner.ref_mapper, realigner.alt_mapper]:
-    #         if self._sequencer == "illumina":
-    #             set_illumina_params(bwa)
-    #         elif self._sequencer == "pacbio":
-    #             set_pacbio_params(bwa)
-    #         elif self._sequencer == "minion":
-    #             set_minion_params(bwa)
 
 
     def __getstate__(self):

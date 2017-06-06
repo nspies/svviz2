@@ -102,6 +102,7 @@ class GenomeSource(object):
                 aln._read.query_qualities = qualities
 
             aln.chrom = self.keys()[aln.reference_id]
+            aln._read.query_name = read.query_name
 
             # if self.blacklist is not None:
                 # print("....", aln.locus, self.blacklist, misc.overlaps(aln.locus, self.blacklist))

@@ -325,6 +325,20 @@ class ReadRenderer(object):
             self.svg.rect(curstart, yoffset, curend-curstart, height, fill=curColor, 
                 **{"class":"read", "data-readid":readID})
 
+class MismatchCounts(object):
+    types_to_id = {"A":0, "C":1, "G":2, "T":3, "INS":4, "DEL":5}
+
+    def __init__(self, chromPartsCollection):
+        self.counts_by_region = {}
+        for part in chromPartsCollection:
+            self.counts_by_region[part.id] = numpy.zeros([6, len(part)], dtype="uint8")
+
+    def add_count(self, region_id, position, type_):
+        row = self.types_to_id[type_]
+        self.counts_by_region[region_id][row,position] += 1
+
+    def counts(self, region_id, position):
+        return self.counts_by_region[region_id][position,:]
 
 
 class Track(object):
@@ -359,7 +373,7 @@ class Track(object):
         self.layout = {}
         self.paired = paired
 
-        # self.mismatch_counts = MismatchCounts(chromPartsCollection)
+        self.mismatch_counts = MismatchCounts(chromPartsCollection)
 
     def findRow(self, start, end, regionID):
         for currow in range(len(self.rows)):
@@ -411,6 +425,8 @@ class Track(object):
                 self.xmax = max(self.xmax, end)
 
         self.height = (self.rowHeight+self.rowMargin) * len(self.rows)
+
+        # if True: # quick consensus
 
     def render(self):        
         # if len(self.getAlignments()) == 0:
