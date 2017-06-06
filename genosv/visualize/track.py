@@ -294,7 +294,7 @@ class ReadRenderer(object):
                     ref = chromPartSeq[genomePosition+i]
                     
                     if eachNuc or alt!=ref:
-                        if not self.mismatch_counts or self.mismatch_counts.query(region_id, alt, genomePosition+i):
+                        if not self.mismatch_counts or alt=="N" or self.mismatch_counts.query(region_id, alt, genomePosition+i):
                             width = curend-curstart
                             width = max(width, self.scale.pixelWidth*1e-4)
                             midpoint = (curstart+curend)/2
@@ -355,7 +355,8 @@ class MismatchCounts(object):
                         self.add_count(region_id, pileupcolumn.pos, "DEL")
                     else:
                         nuc =  pileupread.alignment.query_sequence[pileupread.query_position]
-                        self.add_count(region_id, pileupcolumn.pos, nuc)
+                        if nuc != "N":
+                            self.add_count(region_id, pileupcolumn.pos, nuc)
                     if pileupread.indel:
                         self.add_count(region_id, pileupcolumn.pos, "INS")
 
@@ -374,18 +375,17 @@ class MismatchCounts(object):
         total = self.counts_by_region[region_id][:,start:(end+1)].sum()
         if total < 10:
             return True
-        if (this_type == "INS") and (this_type.sum() / total.sum() > 0.2):
-            print("yy", type_, start, end, this_type, total)
+        if (this_type == "INS") and ((this_type.sum() / total.sum()) > 0.2):
             return True
 
-        if (this_type / total > 0.2).any():
-            print("??", type_, start, end, this_type, total)
+        if ((this_type / total) > 0.2).any():
             return True
         return False
 
 
 class Track(object):
-    def __init__(self, chromPartsCollection, bam, height, width, variant, allele, thickerLines, colorCigar, paired):
+    def __init__(self, chromPartsCollection, bam, height, width, variant, allele, thickerLines, colorCigar, paired,
+                 quick_consensus=True):
         self.chromPartsCollection = chromPartsCollection
         self.height = height
         self.width = width
@@ -414,7 +414,7 @@ class Track(object):
         self.layout = {}
         self.paired = paired
 
-        self.mismatch_counts = MismatchCounts(chromPartsCollection)
+        self.mismatch_counts = MismatchCounts(chromPartsCollection) if quick_consensus else None
         self.readRenderer = ReadRenderer(self.rowHeight, self.scale, self.chromPartsCollection,
                                          thickerLines, colorCigar, self.mismatch_counts)
 
@@ -469,8 +469,8 @@ class Track(object):
 
         self.height = (self.rowHeight+self.rowMargin) * len(self.rows)
 
-        if True: # quick consensus
-            print("tallying...")
+        if self.mismatch_counts is not None: # quick consensus
+            print("using quick consensus mode; tallying...")
             self.mismatch_counts.tally_reads(self.bam)
             print("tallying done.")
 
