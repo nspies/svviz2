@@ -176,7 +176,7 @@ class Axis(object):
 
 NYIWarned = False
 class ReadRenderer(object):
-    def __init__(self, rowHeight, scale, chromPartsCollection, thickerLines=False, colorCigar=True):
+    def __init__(self, rowHeight, scale, chromPartsCollection, thickerLines=False, colorCigar=True, mismatch_counts=None):
         self.rowHeight = rowHeight
         self.svg = None
         self.scale = scale
@@ -189,6 +189,8 @@ class ReadRenderer(object):
         self.insertionColor = "cyan"
         self.deletionColor = "gray"
         self.overlapColor = "lime"
+
+        self.mismatch_counts = mismatch_counts
 
     def render(self, alns, layout):
         # yoffset = alignmentSet.yoffset
@@ -270,7 +272,8 @@ class ReadRenderer(object):
         genomePosition = alignment.reference_start
         sequencePosition = 0
 
-        chromPartSeq = self.chromPartsCollection.get_seq(alignment.reference_name)
+        region_id = alignment.reference_name
+        chromPartSeq = self.chromPartsCollection.get_seq(region_id)
 
         extras = {}
         # if isFlanking:
@@ -291,20 +294,29 @@ class ReadRenderer(object):
                     ref = chromPartSeq[genomePosition+i]
                     
                     if eachNuc or alt!=ref:
-                        self.svg.rect(curstart, yoffset, curend-curstart, height, fill=color, **extras)
+                        if not self.mismatch_counts or self.mismatch_counts.query(region_id, alt, genomePosition+i):
+                            width = curend-curstart
+                            width = max(width, self.scale.pixelWidth*1e-4)
+                            midpoint = (curstart+curend)/2
+                            # print(width, self.scale.pixelWidth, width/self.scale.pixelWidth)
+                            self.svg.rect(midpoint-width/2, yoffset, width, height, fill=color, **extras)
+                            # self.svg.rect(curstart, yoffset, curend-curstart, height, fill=color, **extras)
 
                 sequencePosition += length
                 genomePosition += length
             elif code == 2: #in "D":
-                curstart = self.scale.topixels(genomePosition, alignment.reference_name)
-                curend = self.scale.topixels(genomePosition+length+1, alignment.reference_name)
-                self.svg.rect(curstart, yoffset, curend-curstart, height, fill=self.deletionColor, **extras)
+                if not self.mismatch_counts or self.mismatch_counts.query(region_id, "DEL", genomePosition, genomePosition+length+1):
+                    curstart = self.scale.topixels(genomePosition, alignment.reference_name)
+                    curend = self.scale.topixels(genomePosition+length+1, alignment.reference_name)
+                    self.svg.rect(curstart, yoffset, curend-curstart, height, fill=self.deletionColor, **extras)
 
                 genomePosition += length
             elif code in [1, 4, 5]: #"IHS":
-                curstart = self.scale.topixels(genomePosition-0.5, alignment.reference_name)
-                curend = self.scale.topixels(genomePosition+0.5, alignment.reference_name)
-                self.svg.rect(curstart, yoffset, curend-curstart, height, fill=self.insertionColor, **extras)
+                # TODO: always draw clipping, irrespective of consensus sequence or mode
+                if not self.mismatch_counts or self.mismatch_counts.query(region_id, "INS", genomePosition-5, genomePosition+5):
+                    curstart = self.scale.topixels(genomePosition-0.5, alignment.reference_name)
+                    curend = self.scale.topixels(genomePosition+0.5, alignment.reference_name)
+                    self.svg.rect(curstart, yoffset, curend-curstart, height, fill=self.insertionColor, **extras)
 
                 sequencePosition += length
 
@@ -333,12 +345,43 @@ class MismatchCounts(object):
         for part in chromPartsCollection:
             self.counts_by_region[part.id] = numpy.zeros([6, len(part)], dtype="uint8")
 
+    def tally_reads(self, bam):
+        for region_id in bam.references:
+            for pileupcolumn in bam.pileup(region_id):
+                for pileupread in pileupcolumn.pileups:
+                    if pileupread.is_refskip:
+                        continue
+                    elif pileupread.is_del:
+                        self.add_count(region_id, pileupcolumn.pos, "DEL")
+                    else:
+                        nuc =  pileupread.alignment.query_sequence[pileupread.query_position]
+                        self.add_count(region_id, pileupcolumn.pos, nuc)
+                    if pileupread.indel:
+                        self.add_count(region_id, pileupcolumn.pos, "INS")
+
     def add_count(self, region_id, position, type_):
         row = self.types_to_id[type_]
         self.counts_by_region[region_id][row,position] += 1
 
     def counts(self, region_id, position):
         return self.counts_by_region[region_id][position,:]
+
+    def query(self, region_id, type_, start, end=None):
+        if end is None:
+            end = start
+        row = self.types_to_id[type_]
+        this_type = self.counts_by_region[region_id][row,start:(end+1)]
+        total = self.counts_by_region[region_id][:,start:(end+1)].sum()
+        if total < 10:
+            return True
+        if (this_type == "INS") and (this_type.sum() / total.sum() > 0.2):
+            print("yy", type_, start, end, this_type, total)
+            return True
+
+        if (this_type / total > 0.2).any():
+            print("??", type_, start, end, this_type, total)
+            return True
+        return False
 
 
 class Track(object):
@@ -351,8 +394,6 @@ class Track(object):
 
         self.rowHeight = 5
         self.rowMargin = 1
-
-        self.readRenderer = ReadRenderer(self.rowHeight, self.scale, self.chromPartsCollection, thickerLines, colorCigar)
 
         self.bam = bam
 
@@ -374,6 +415,8 @@ class Track(object):
         self.paired = paired
 
         self.mismatch_counts = MismatchCounts(chromPartsCollection)
+        self.readRenderer = ReadRenderer(self.rowHeight, self.scale, self.chromPartsCollection,
+                                         thickerLines, colorCigar, self.mismatch_counts)
 
     def findRow(self, start, end, regionID):
         for currow in range(len(self.rows)):
@@ -426,7 +469,10 @@ class Track(object):
 
         self.height = (self.rowHeight+self.rowMargin) * len(self.rows)
 
-        # if True: # quick consensus
+        if True: # quick consensus
+            print("tallying...")
+            self.mismatch_counts.tally_reads(self.bam)
+            print("tallying done.")
 
     def render(self):        
         # if len(self.getAlignments()) == 0:
