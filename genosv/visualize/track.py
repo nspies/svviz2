@@ -185,14 +185,15 @@ class ReadRenderer(object):
         self.colorCigar = colorCigar
 
         self.nucColors = {"A":"blue", "C":"orange", "G":"green", "T":"black", "N":"gray"}
-        self.colorsByStrand = {False:"purple", True:"red"}
+        self.colorsByStrand = {False:numpy.array([128,0,128]), True:numpy.array([255,0,0])}
         self.insertionColor = "cyan"
+        self.clippingColor = "cyan"
         self.deletionColor = "gray"
         self.overlapColor = "lime"
 
         self.mismatch_counts = mismatch_counts
 
-    def render(self, alns, layout):
+    def render(self, alns, layout, brightness=1.0):
         # yoffset = alignmentSet.yoffset
         read_name = alns[0].query_name
         regionID = alns[0].reference_name
@@ -246,6 +247,9 @@ class ReadRenderer(object):
             pend = self.scale.topixels(aln.reference_end, regionID)
 
             curColor = self.colorsByStrand[aln.is_reverse]
+            if brightness != 1.0:
+                curColor = curColor * brightness + numpy.array([255., 255., 255.])*(1-brightness)
+            curColor = "rgb({},{},{})".format(*map(int, curColor))
             extras = {"class":"read"}#, "data-cigar":alignment.cigar,"data-readid":alignment.name}
             # if isFlanking:
             #     extras["class"] = "read flanking"
@@ -311,8 +315,7 @@ class ReadRenderer(object):
                     self.svg.rect(curstart, yoffset, curend-curstart, height, fill=self.deletionColor, **extras)
 
                 genomePosition += length
-            elif code in [1, 4, 5]: #"IHS":
-                # TODO: always draw clipping, irrespective of consensus sequence or mode
+            elif code == 1: # I
                 if not self.mismatch_counts or self.mismatch_counts.query(region_id, "INS", genomePosition-2, genomePosition+2):
                     curstart = self.scale.topixels(genomePosition-0.5, alignment.reference_name)
                     curend = self.scale.topixels(genomePosition+0.5, alignment.reference_name)
@@ -323,6 +326,17 @@ class ReadRenderer(object):
 
                     self.svg.rect(midpoint-width/2, yoffset, width, height, fill=self.insertionColor, **extras)
                     # self.svg.rect(curstart, yoffset, curend-curstart, height, fill=self.insertionColor, **extras)
+                sequencePosition += length
+            elif code in [4, 5]: #"HS":
+                # always draw clipping, irrespective of consensus sequence or mode
+                curstart = self.scale.topixels(genomePosition-0.5, alignment.reference_name)
+                curend = self.scale.topixels(genomePosition+0.5, alignment.reference_name)
+
+                width = curend-curstart
+                width = max(width, self.scale.pixelWidth*1e-2)
+                midpoint = (curstart+curend)/2
+
+                self.svg.rect(midpoint-width/2, yoffset, width, height, fill=self.clippingColor, **extras)
 
                 sequencePosition += length
 
@@ -550,7 +564,9 @@ class Track(object):
                 else:
                     cur_reads = [read]
 
-                self.readRenderer.render(cur_reads, self.layout)
+                brightness = 0.2 + (cur_reads[0].mapq/40.0*0.8)
+
+                self.readRenderer.render(cur_reads, self.layout, brightness=brightness)
 
         return self.rendered
 
