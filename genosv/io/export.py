@@ -79,8 +79,8 @@ class TrackCompositor(object):
     def addTracks(self, section, names, tracks, allele):
         alleleTracks = self.dataHub.alleleTracks[allele]
 
-        for track in tracks:
-            track.render()
+        # for track in tracks:
+        #     track.render()
         xmin, width = self.getBounds(tracks, allele)
 
         hasTrackWithReads = False

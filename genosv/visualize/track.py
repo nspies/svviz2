@@ -313,10 +313,16 @@ class ReadRenderer(object):
                 genomePosition += length
             elif code in [1, 4, 5]: #"IHS":
                 # TODO: always draw clipping, irrespective of consensus sequence or mode
-                if not self.mismatch_counts or self.mismatch_counts.query(region_id, "INS", genomePosition-5, genomePosition+5):
+                if not self.mismatch_counts or self.mismatch_counts.query(region_id, "INS", genomePosition-2, genomePosition+2):
                     curstart = self.scale.topixels(genomePosition-0.5, alignment.reference_name)
                     curend = self.scale.topixels(genomePosition+0.5, alignment.reference_name)
-                    self.svg.rect(curstart, yoffset, curend-curstart, height, fill=self.insertionColor, **extras)
+
+                    width = curend-curstart
+                    width = max(width, self.scale.pixelWidth*1e-4)
+                    midpoint = (curstart+curend)/2
+
+                    self.svg.rect(midpoint-width/2, yoffset, width, height, fill=self.insertionColor, **extras)
+                    # self.svg.rect(curstart, yoffset, curend-curstart, height, fill=self.insertionColor, **extras)
 
                 sequencePosition += length
 
@@ -338,16 +344,24 @@ class ReadRenderer(object):
                 **{"class":"read", "data-readid":readID})
 
 class MismatchCounts(object):
-    types_to_id = {"A":0, "C":1, "G":2, "T":3, "INS":4, "DEL":5}
+    """
+    keeps track of how many of each nucleotide (or insertion/deletion) are present at each position
+    -> used for the quick consensus mode
+    """
+    types_to_id = {"A":0, "C":1, "G":2, "T":3, "DEL":5}
 
     def __init__(self, chromPartsCollection):
         self.counts_by_region = {}
+        self.insertions_by_region = {}
         for part in chromPartsCollection:
-            self.counts_by_region[part.id] = numpy.zeros([6, len(part)], dtype="uint8")
+            self.counts_by_region[part.id] = numpy.zeros([6, len(part)])#, dtype="uint8")
+            self.insertions_by_region[part.id] = numpy.zeros(len(part))#, dtype="uint8")
 
     def tally_reads(self, bam):
+        depths = []
         for region_id in bam.references:
             for pileupcolumn in bam.pileup(region_id):
+                depths.append(pileupcolumn.n)
                 for pileupread in pileupcolumn.pileups:
                     if pileupread.is_refskip:
                         continue
@@ -357,12 +371,15 @@ class MismatchCounts(object):
                         nuc =  pileupread.alignment.query_sequence[pileupread.query_position]
                         if nuc != "N":
                             self.add_count(region_id, pileupcolumn.pos, nuc)
-                    if pileupread.indel:
+                    if pileupread.indel > 0:
                         self.add_count(region_id, pileupcolumn.pos, "INS")
 
     def add_count(self, region_id, position, type_):
-        row = self.types_to_id[type_]
-        self.counts_by_region[region_id][row,position] += 1
+        if type_ == "INS":
+            self.insertions_by_region[region_id][position] += 1
+        else:
+            row = self.types_to_id[type_]
+            self.counts_by_region[region_id][row,position] += 1
 
     def counts(self, region_id, position):
         return self.counts_by_region[region_id][position,:]
@@ -370,16 +387,28 @@ class MismatchCounts(object):
     def query(self, region_id, type_, start, end=None):
         if end is None:
             end = start
-        row = self.types_to_id[type_]
-        this_type = self.counts_by_region[region_id][row,start:(end+1)]
-        total = self.counts_by_region[region_id][:,start:(end+1)].sum()
-        if total < 10:
-            return True
-        if (this_type == "INS") and ((this_type.sum() / total.sum()) > 0.2):
-            return True
 
-        if ((this_type / total) > 0.2).any():
-            return True
+        total = self.counts_by_region[region_id][:,start:(end+1)].sum(axis=0)
+        total = total.astype(float)
+
+        if (type_ == "INS"):
+            insertions = self.insertions_by_region[region_id][start:(end+1)]
+            if (insertions.sum() / total.sum()) > 0.2:
+               # print("INSERTION!", region_id, type_, start, end, insertions, total)
+               return True
+
+        else:        
+            row = self.types_to_id[type_]
+            this_type = self.counts_by_region[region_id][row,start:(end+1)]
+
+            if type_ == "DEL":
+                if  ((this_type / total) > 0.3).any():
+                # if type_ == "DEL":
+                #     print("DEL", region_id, type_, start, end, this_type, total)
+                    return True
+            elif ((this_type / total) > 0.2).any():
+                return True
+
         return False
 
 
@@ -429,20 +458,8 @@ class Track(object):
 
         return currow
 
-    # def getAlignments(self):
-    #     # check which reads are overlapping (self.gstart, self.gend)
-    #     # sorting by name makes the layout process deterministic
-    #     regionIDsToPositions = dict((part.id, i) for i, part in enumerate(self.chromPartsCollection))
-
-    #     def sortKey(alnSet):
-    #         locus = alnSet.loci[0]
-    #         return (regionIDsToPositions[locus.chrom], 
-    #                 locus.start, locus.end, alnSet.name)
-
-    #     return sorted(self.alignmentSets, key=sortKey)
-
     def dolayout(self):
-        self.rows = [None]#*numRows
+        self.rows = [None]
 
         self.xmin = 1e100
         self.xmax = 0
