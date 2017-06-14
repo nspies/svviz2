@@ -1,9 +1,9 @@
-import collections
+import numpy
 import pysam
 
 from genosv.utility import intervals
 from genosv.utility import misc
-from genosv.remap import mapq
+from genosv.utility.statistics import prob_to_phred
 
 
 ATTRIBS = ["query_name",
@@ -113,7 +113,7 @@ class Alignment(object):
         self.ref_pairs = self.realign_against_allele(ref_genome_sources)
         self.alt_pairs = self.realign_against_allele(alt_genome_sources)
 
-        mapq.set_mapqs(self.ref_pairs+self.alt_pairs)
+        set_mapqs(self.ref_pairs+self.alt_pairs)
         self.ref_pairs.sort(key=lambda x: x.score, reverse=True)
         self.alt_pairs.sort(key=lambda x: x.score, reverse=True)
 
@@ -229,3 +229,38 @@ class AlignmentPair(object):
     def set_tag(self, key, value):
         self.aln1.set_tag(key, value)
         self.aln2.set_tag(key, value)
+
+
+
+def set_mapqs(alns):
+    if len(alns) == 0:
+        return
+
+    # first, let's make sure all the scores are within 300 of one another; scores that are
+    # smaller than best_score-300 will be zeroed out
+    scores = numpy.array([aln.score for aln in alns])
+    best_score = scores.max()
+
+    if best_score < -300:
+        # correction = best_score + 300
+        scores = scores - best_score
+        scores[scores>0] = 0
+
+    probs = 10 ** (scores)
+    total = probs.sum()
+
+    # print("::::", total)#, [aln.score for aln in alns])
+
+    for aln, prob in zip(alns, probs):
+        aln.posterior = prob / total
+        aln.mapq = int(min(prob_to_phred(1-aln.posterior, 10), 40))
+
+        # print(aln.get_tag("AS"), aln.score, aln.posterior, prob_to_phred(1-aln.posterior, 10), aln.mapq)
+
+        # # if len(pairs) > 1:
+        # print(":::::::::::::::::::")
+        # for pair in pairs:
+        #     print(pair.insert_size)#, read_stats.scoreInsertSize(pair.insert_size))
+        #     print(pair.read1)
+        #     print(pair.read2)
+        #     print(pair.score, pair.posterior, "mapq:", float(pair.mapq))

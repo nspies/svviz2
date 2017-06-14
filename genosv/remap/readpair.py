@@ -2,7 +2,7 @@ import collections
 import logging
 
 
-from genosv.remap import mapq
+# from genosv.remap import mapq
 from genosv.remap import alignment
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ class ReadPair(object):
         self.ref_pairs = self.realign_against_allele(ref_genome_sources)
         self.alt_pairs = self.realign_against_allele(alt_genome_sources)
 
-        mapq.set_mapqs(self.ref_pairs+self.alt_pairs)
+        alignment.set_mapqs(self.ref_pairs+self.alt_pairs)
         self.ref_pairs.sort(key=lambda x: x.score, reverse=True)
         self.alt_pairs.sort(key=lambda x: x.score, reverse=True)
 

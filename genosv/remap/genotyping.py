@@ -69,7 +69,7 @@ def set_read_supports_allele(aln_set, aln, allele, score, read_stats, breakpoint
     # print(overlap, aln_locus, breakpoint_collection)
     if overlap >= min_overlap:
         aln_set.supports_allele = allele
-        aln_set.support_prob = (1 - mapq.phred_to_prob(score, 10.0))
+        aln_set.support_prob = score / 40.0 #(1 - mapq.phred_to_prob(score, 10.0))
         aln_set.supporting_aln = aln
         # aln_set.overlap = overlap
         aln.set_tag("OV", overlap)

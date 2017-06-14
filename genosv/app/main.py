@@ -39,6 +39,8 @@ def run(datahub):
             
         visualize.visualize(datahub)#, temp_storage)
 
+    datahub.cleanup()
+
 def main():
     """ entry point from command line """
     logging.basicConfig(level=logging.DEBUG)

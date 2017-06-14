@@ -17,3 +17,24 @@ except ImportError:
             n -= 1
 
         return r
+
+
+def phred_to_prob(phred, phred_scale):
+    if phred < 0:
+        phred = 0
+    return 10.0 ** (phred / -phred_scale)
+
+def prob_to_phred(phred, scale):
+    if phred <= 0:
+        return numpy.inf
+
+    return -scale * numpy.log10(phred)
+
+
+def log_sum_exp(array, base=10.0):
+    base = float(base)
+    array = numpy.asarray(array)
+    m = array.max()
+    diff = array - m
+    sum_of_exps = (base**(diff)).sum()
+    return m + numpy.log(sum_of_exps)/numpy.log(base)

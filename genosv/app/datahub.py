@@ -2,7 +2,7 @@ import collections
 import logging
 import os
 import pysam
-
+import shutil
 
 from genosv.app import genomesource
 from genosv.app.sample import Sample
@@ -87,6 +87,11 @@ class DataHub(object):
         del state["genome"]
         return state
 
+    def cleanup(self):
+        temp_dir = os.path.join(self.args.outdir, "genosv-temp")
+        if os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir)
+
     def get_variants(self):
         vcf = vcfparser.VCFParser(self)
         for variant in vcf.get_variants():
@@ -106,12 +111,17 @@ class DataHub(object):
 
         # TODO: if savereads, then save to a proper file, otherwise save to temporary space
         # ... or just always save
-        # if self.args.savereads:
+
+        if self.args.savereads:
+            outdir = self.args.outdir
+        else:
+            outdir = os.path.join(self.args.outdir, "genosv-temp")
+            misc.ensure_dir(outdir)
 
         for sample_name, sample in self.samples.items():
             for allele in ["ref", "alt"]:
                 sample.outbam_paths[allele] = os.path.join(
-                    self.args.outdir,
+                    outdir,
                     ".".join([variant.short_name(), sample_name, allele, "bam"]))
 
             # sample.outbam_paths["ref"] = os.path.join(
@@ -119,11 +129,12 @@ class DataHub(object):
 
 
 
-        for allele in ["alt", "ref"]:
-            outpath = os.path.join(self.args.outdir, "{}.genome.{}.fa".format(variant.short_name(), allele))
-            with open(outpath, "w") as genome_file:
-                for name, seq in self.variant.seqs(allele).items():
-                    genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
+        if self.args.savereads:
+            for allele in ["alt", "ref"]:
+                outpath = os.path.join(self.args.outdir, "{}.genome.{}.fa".format(variant.short_name(), allele))
+                with open(outpath, "w") as genome_file:
+                    for name, seq in self.variant.seqs(allele).items():
+                        genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
 
 
 

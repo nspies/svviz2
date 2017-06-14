@@ -1,9 +1,10 @@
 import collections
 import logging
 import numpy
-import time
+# import time
 
 from genosv.remap.alignment import Alignment
+from genosv.utility.statistics import phred_to_prob, prob_to_phred
 
 logger = logging.getLogger(__name__)
 
@@ -12,26 +13,6 @@ BAM_CHARD_CLIP = 5
 
 TAG_END_SCORE = "Es"
 
-
-def phred_to_prob(phred, phred_scale):
-    if phred < 0:
-        phred = 0
-    return 10.0 ** (phred / -phred_scale)
-
-def prob_to_phred(phred, scale):
-    if phred <= 0:
-        return numpy.inf
-
-    return -scale * numpy.log10(phred)
-
-
-def log_sum_exp(array, base=10.0):
-    base = float(base)
-    array = numpy.asarray(array)
-    m = array.max()
-    diff = array - m
-    sum_of_exps = (base**(diff)).sum()
-    return m + numpy.log(sum_of_exps)/numpy.log(base)
 
 
 class MAPQCalculator(object):
@@ -218,39 +199,6 @@ class MAPQCalculator(object):
         # print(pair_prob, prob_to_phred(pair_prob, 10))
 
         return log10_pair_prob
-
-def set_mapqs(alns):
-    if len(alns) == 0:
-        return
-
-    # first, let's make sure all the scores are within 300 of one another; scores that are
-    # smaller than best_score-300 will be zeroed out
-    scores = numpy.array([aln.score for aln in alns])
-    best_score = scores.max()
-
-    if best_score < -300:
-        # correction = best_score + 300
-        scores = scores - best_score
-        scores[scores>0] = 0
-
-    probs = 10 ** (scores)
-    total = probs.sum()
-
-    # print("::::", total)#, [aln.score for aln in alns])
-
-    for aln, prob in zip(alns, probs):
-        aln.posterior = prob / total
-        aln.mapq = int(min(prob_to_phred(1-aln.posterior, 10), 40))
-
-        # print(aln.get_tag("AS"), aln.score, aln.posterior, prob_to_phred(1-aln.posterior, 10), aln.mapq)
-
-        # # if len(pairs) > 1:
-        # print(":::::::::::::::::::")
-        # for pair in pairs:
-        #     print(pair.insert_size)#, read_stats.scoreInsertSize(pair.insert_size))
-        #     print(pair.read1)
-        #     print(pair.read2)
-        #     print(pair.score, pair.posterior, "mapq:", float(pair.mapq))
 
 
 def get_concordant_pairs(alns1, alns2, read_stats):
