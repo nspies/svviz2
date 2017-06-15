@@ -27,3 +27,7 @@ except AttributeError:
 def reverse_comp(st):
     """ Returns the reverse complement of a DNA sequence; non ACGT bases will be ignored. """
     return str(st)[::-1].translate(comp)
+
+
+def str_to_bool(s):
+    return s.lower() in ["1", "true", "t", "yes","y"]

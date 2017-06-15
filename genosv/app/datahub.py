@@ -139,6 +139,7 @@ class DataHub(object):
 
 
     def set_args(self, args):
+        EXTRA_ARG_TYPES = ["single_ended", "sequencer"]
         self.args = args
 
         self.aligner_type = args.aligner
@@ -150,8 +151,11 @@ class DataHub(object):
             self.args.outdir = os.getcwd()
         misc.ensure_dir(self.args.outdir)
 
-        for bamPath in self.args.bam:
-            name = name_from_bam_path(bamPath)
+        for bam_description in self.args.bam:
+            fields = bam_description.split(",")
+
+            bam_path = fields.pop(0)
+            name = name_from_bam_path(bam_path)
 
             # get unique name by appending _i as needed
             i = 0
@@ -162,7 +166,20 @@ class DataHub(object):
                     name = curname
                     break
 
-            sample = Sample(name, bamPath, self)
+            extra_args = {}
+            for field in fields:
+                if field.count("=") != 1:
+                    message = "Error specifying additional sample arguments: field '{}' should" \
+                              "be of format 'key=value'"
+                    raise Exception(message.format(field))
+                key, value = field.split("=")
+                if not key in EXTRA_ARG_TYPES:
+                    message = "Error specifying additional sample arguments: key '{}' must be" \
+                              "one of {}"
+                    raise Exception(message.format(key, ",".join(EXTRA_ARG_TYPES)))
+                extra_args[key] = value
+
+            sample = Sample(name, bam_path, self, extra_args)
             self.samples[name] = sample
 
         # if self.args.annotations:

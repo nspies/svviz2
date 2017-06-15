@@ -5,8 +5,10 @@ import sys
 
 from genosv.io.readstatistics import ReadStatistics
 from genosv.utility.bam import bam_sort_index
+from genosv.utility.misc import str_to_bool
 
 logger = logging.getLogger(__name__)
+
 
 
 def _get_bam_headers(variant, allele):
@@ -20,7 +22,7 @@ def _get_bam_headers(variant, allele):
 
 
 class Sample(object):
-    def __init__(self, name, bam_path, datahub):
+    def __init__(self, name, bam_path, datahub, extra_args=None):
         self.name = name
         self.datahub = datahub
 
@@ -51,6 +53,14 @@ class Sample(object):
                 self.sequencer = "nanopore"
             elif mismatch_rate > 0.01:
                 self.sequencer = "pacbio"
+            elif numpy.isnan(mismatches) and lengths > 1000:
+                self.sequencer = "pacbio"
+
+        if "sequencer" in extra_args:
+            self.sequencer = extra_args["sequencer"].lower()
+            assert self.sequencer in ["illumina", "pacbio", "nanopore"]
+        if "single_ended" in extra_args:
+            self.single_ended = str_to_bool(extra_args["single_ended"])
 
         print("ALIGNMENT PARAMS:::", self.sequencer)
 
