@@ -59,6 +59,7 @@ class Sample(object):
         if "sequencer" in extra_args:
             self.sequencer = extra_args["sequencer"].lower()
             assert self.sequencer in ["illumina", "pacbio", "nanopore"]
+            self.single_ended = True
         if "single_ended" in extra_args:
             self.single_ended = str_to_bool(extra_args["single_ended"])
 

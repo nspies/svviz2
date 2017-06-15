@@ -17,7 +17,7 @@ def parse_args(input_args):
 
     required_args = parser.add_argument_group("Required arguments")
 
-    required_args.add_argument("bam", action="append", help=
+    required_args.add_argument("bam", nargs="+", help=
         "sorted, indexed bam file containing reads of interest to plot; can be specified multiple \n"
         "times to load multiple samples")
 
