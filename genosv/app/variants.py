@@ -350,36 +350,36 @@ class Breakend(StructuralVariant):
             chrom1, self.breakpoints[0].start, chrom2, self.breakpoints[1].start)
 
 
-# class Deletion(StructuralVariant):
-#     @classmethod
-#     def from_breakpoints(class_, chrom, first, second, align_distance, fasta):
-#         breakpointLoci = [Locus(chrom, first, first, "+"), Locus(chrom, second, second, "+")]
-#         return class_(breakpointLoci, align_distance, fasta)
+class Deletion(StructuralVariant):
+    @classmethod
+    def from_breakpoints(class_, chrom, first, second, datahub, name):
+        breakpointLoci = [Locus(chrom, first, first, "+"), Locus(chrom, second, second, "+")]
+        return class_(breakpointLoci, datahub, name)
 
-#     def search_regions(self, searchDistance):
-#         chrom = self.breakpoints[0].chrom
-#         deletionRegion = Locus(chrom, nonNegative(self.breakpoints[0].start-searchDistance), 
-#             self.breakpoints[-1].end+searchDistance, "+")
-#         return [deletionRegion]
+    def search_regions(self, searchDistance):
+        chrom = self.breakpoints[0].chrom
+        deletionRegion = Locus(chrom, non_negative(self.breakpoints[0].start-searchDistance), 
+            self.breakpoints[-1].end+searchDistance, "+")
+        return [deletionRegion]
 
-#     def deletionLength(self):
-#         length = self.breakpoints[1].end - self.breakpoints[0].start
-#         return length
+    def deletionLength(self):
+        length = self.breakpoints[1].end - self.breakpoints[0].start
+        return length
 
-#     def segments(self, allele):
-#         chrom = self.breakpoints[0].chrom
+    def segments(self, allele):
+        chrom = self.breakpoints[0].chrom
 
-#         if allele in ["ref", "amb"]:
-#             return [Segment(chrom, self.breakpoints[0].start-self.align_distance, self.breakpoints[0].start-1, "+", 0),
-#                     Segment(chrom, self.breakpoints[0].start, self.breakpoints[1].end, "+", 1),
-#                     Segment(chrom, self.breakpoints[1].end+1, self.breakpoints[1].end+self.align_distance, "+", 2)]
-#         elif allele == "alt":
-#             return [Segment(chrom, self.breakpoints[0].start-self.align_distance, self.breakpoints[0].start-1, "+", 0),
-#                     Segment(chrom, self.breakpoints[1].end+1, self.breakpoints[1].end+self.align_distance, "+", 2)]
+        if allele in ["ref", "amb"]:
+            return [Segment(chrom, self.breakpoints[0].start-self.align_distance, self.breakpoints[0].start-1, "+", 0),
+                    Segment(chrom, self.breakpoints[0].start, self.breakpoints[1].end, "+", 1),
+                    Segment(chrom, self.breakpoints[1].end+1, self.breakpoints[1].end+self.align_distance, "+", 2)]
+        elif allele == "alt":
+            return [Segment(chrom, self.breakpoints[0].start-self.align_distance, self.breakpoints[0].start-1, "+", 0),
+                    Segment(chrom, self.breakpoints[1].end+1, self.breakpoints[1].end+self.align_distance, "+", 2)]
 
-#     def __str__(self):
-#         return "{}::{}:{:,}-{:,}({})".format(self.__class__.__name__, self.breakpoints[0].chrom, self.breakpoints[0].start, 
-#             self.breakpoints[1].end, self.deletionLength())
+    def __str__(self):
+        return "{}::{}:{:,}-{:,}({})".format(self.__class__.__name__, self.breakpoints[0].chrom, self.breakpoints[0].start, 
+            self.breakpoints[1].end, self.deletionLength())
 
 
 # class Inversion(StructuralVariant):

@@ -42,7 +42,9 @@ class VCFParser(object):
                     assert not variant.id in breakends
                     breakends[variant.id] = variant
             elif only_nucs(variant.ref) and only_nucs(variant.alts[0]):
-                if sv_type in ["INS", "DEL"]:
+                if sv_type == "DEL":
+                    yield get_deletion(variant, self.datahub)
+                elif sv_type == "INS":
                     yield get_sequence_defined(variant, self.datahub)
             else:
                 logger.warn("SKIPPING VARIANT: {}".format(variant))
@@ -55,17 +57,29 @@ def get_sequence_defined(variant, datahub):
     # print("::", variant.id, variant.start, variant.stop, len(variant.ref))
     assert variant.stop-variant.start == len(variant.ref)
 
+    if len(variant.alts[0])==1 and variant.ref[0]==variant.alts[0][0]:
+        # we need to add 1 to the start position to take into account the fact that the
+        # alt is defined as the first nucleotide of the ref (which we've verified is actually
+        # true here); we'll remove it from the ref so that the alt is zero-length
+        deletion  = variants.Deletion.from_breakpoints(variant.chrom, variant.start+1, variant.stop-1,
+                                                       datahub, variant.id)
+        return deletion
+
     sdv = variants.SequenceDefinedVariant(
         variant.chrom, variant.start, variant.stop-1,
         variant.alts[0], datahub, variant.id)
 
-    # print(sdv)
     return sdv
 
 def get_breakend(first, second, datahub):
     # return "{}\n{}".format(_parse_breakend(first), _parse_breakend(second))
     return parse_breakend(first, second, datahub)
 
+def get_deletion(variant, datahub):
+    deletion  = variants.Deletion.from_breakpoints(variant.chrom, variant.start, variant.stop-1,
+                                                   datahub, variant.id)
+    print("))))DEL:", deletion)
+    return deletion
 
 def _parse_breakend(record):
     ref = record.ref

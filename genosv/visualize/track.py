@@ -519,8 +519,6 @@ class Track(object):
             print("tallying done.")
 
     def render(self):    
-        print("RENDER", self)    
-        # if len(self.getAlignments()) == 0:
         if self.bam.count() == 0:
             xmiddle = self.scale.pixelWidth / 2.0
 
