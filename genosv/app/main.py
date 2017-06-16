@@ -5,6 +5,7 @@ import time
 from genosv.app import commandline
 from genosv.app.datahub import DataHub
 from genosv.visualize import visualize
+from genosv.app import report
 
 logger = logging.getLogger(__name__)
 
@@ -26,18 +27,14 @@ def get_datahub():
 def run(datahub):
     """ this runs the app on the provided datahub """
     for variant in datahub.get_variants():
-        # if "86,868,786" not in str(variant):
-            # print("skipping", str(variant))
-            # continue
-
         if not datahub.args.render_only:
             t0 = time.time()
-            #temp_storage = 
             datahub.genotype_cur_variant()
             t1 = time.time()
             print("TIME:::", t1-t0)
             
-        visualize.visualize(datahub)#, temp_storage)
+        visualize.visualize(datahub)
+        report.report(datahub)
 
     datahub.cleanup()
 

@@ -147,7 +147,7 @@ class Locus:
     # def __ne__(self,other): return not(self.__eq__(other))
     
     def __repr__(self):
-        return "Locus%s"%str(self)
+        return "Locus(%s)"%str(self)
 
     def __str__(self):
-        return "(" + self._chrom +":" + str(self.start) + "-" + str(self.end) + self._strand + ")"
+        return self._chrom +":" + str(self.start) + "-" + str(self.end) + self._strand

@@ -328,12 +328,6 @@ class Breakend(StructuralVariant):
             if l1.overlaps(l2) or l1.overlapsAntisense(l2):
                 raise Exception("Not yet implemented - breakend-breakpoints near one another")
 
-            # loci = [Locus(s.chrom, s.start, s.end, "+") for s in segments]
-            # for i in range(len(loci)-1):
-            #     for j in range(i+1, len(loci)):
-            #         if loci[i].overlaps(loci[j]):
-            #             raise Exception("Not yet implemented - breakend-breakpoints near one another")
-
             name = "alt_{}/{}".format(b1.chrom, b2.chrom)
             parts.append(ChromPart(name, [s1, s2], self.sources))
 

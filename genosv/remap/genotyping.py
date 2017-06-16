@@ -1,8 +1,7 @@
 import numpy
 
-
-from genosv.remap import mapq
-from genosv.utility import statistics
+import json
+from genosv.utility import intervals, statistics
 
 
 
@@ -32,8 +31,8 @@ def calculate_genotype_likelihoods(ref, alt, priors=[0.05, 0.5, 0.95], max_qual=
     return log_probs, phred_genotype_qualities
 
 
-def get_best_overlap(read_locus, breakpoints):
-    best_overlap = 0
+def get_overlaps(read_locus, unsequenced_insert_locus, breakpoints):
+    overlaps = {}
 
     for breakpoint in breakpoints:
         if not read_locus.overlapsAnysense(breakpoint):
@@ -45,9 +44,19 @@ def get_best_overlap(read_locus, breakpoints):
             breakpoint.start - read_locus.start,
             read_locus.end - breakpoint.start])
 
-        best_overlap = max(cur_overlap, best_overlap)
 
-    return best_overlap
+        if unsequenced_insert_locus:
+            overlaps_sequence = not unsequenced_insert_locus.overlapsAnysense(breakpoint)
+        else:
+            overlaps_sequence = True
+
+        overlaps[str(breakpoint)] = (cur_overlap, overlaps_sequence)
+        # best_overlap = max(cur_overlap, best_overlap)
+        # if cur_overlap > best_overlap:
+        #     best_breakpoint = breakpoint
+        #     best_overlap = cur_overlap
+
+    return overlaps#best_overlap, best_breakpoint
 
 def set_read_supports_allele(aln_set, aln, allele, score, read_stats, breakpoint_collection, min_overlap):
     if not aln.concordant(read_stats):
@@ -55,6 +64,14 @@ def set_read_supports_allele(aln_set, aln, allele, score, read_stats, breakpoint
 
     assert len(aln.loci) == 1
     aln_locus = aln.loci[0]
+    try:
+        chrom = aln.aln1.chrom
+        start = max(aln.aln1.reference_start, aln.aln2.reference_start)
+        end = min(aln.aln1.reference_end, aln.aln2.reference_end)
+
+        unsequenced_insert_locus = intervals.Locus(chrom, start, end, "+")
+    except AttributeError:
+        unsequenced_insert_locus = None
 
     try:
         if aln.insert_size > read_stats.max_reasonable_insert_size():
@@ -64,19 +81,22 @@ def set_read_supports_allele(aln_set, aln, allele, score, read_stats, breakpoint
     except (IndexError, AttributeError):
         pass
 
-    overlap = get_best_overlap(aln_locus, breakpoint_collection)
+    overlaps = get_overlaps(aln_locus, unsequenced_insert_locus, breakpoint_collection)
+    if len(overlaps) == 0:
+        return 0
 
-    # print(overlap, aln_locus, breakpoint_collection)
-    if overlap >= min_overlap:
-        aln_set.supports_allele = allele
-        aln_set.support_prob = score / 40.0 #(1 - mapq.phred_to_prob(score, 10.0))
-        aln_set.supporting_aln = aln
-        # aln_set.overlap = overlap
-        aln.set_tag("OV", overlap)
-        aln.overlap = overlap ## TODO: TEMP
-        return aln_set.support_prob
+    best_overlap = max(list(zip(*overlaps.values()))[1])
 
-    return 0
+    aln_set.supports_allele = allele
+    aln_set.support_prob = score / 40.0 #(1 - mapq.phred_to_prob(score, 10.0))
+    aln_set.supporting_aln = aln
+
+    aln.set_tag("OV", best_overlap)
+    aln.set_tag("Ov", json.dumps(overlaps))
+    aln.overlap = best_overlap
+
+    return aln_set.support_prob
+
 
 def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_collection, read_stats):
     def get_best_score(_aln_set, _allele):
