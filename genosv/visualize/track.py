@@ -55,68 +55,16 @@ class Scale(object):
 
         return breakpoints
 
-# class Scale(object):
-#     def __init__(self, chromPartsCollection, pixelWidth, dividerSize=25):
-#         # length is in genomic coordinates, starts is in pixels
-#         self.dividerSize = dividerSize
-#         self.partsToLengths = collections.OrderedDict()
-#         self.partsToStartPixels = collections.OrderedDict()
-
-#         self.partsToStartCoords = collections.OrderedDict()
-#         self.chromPartsCollection = chromPartsCollection
-
-#         for part in chromPartsCollection:
-#             left_offset = len(part.segments[0]) - 50
-#             right_offset = len(part.segments[-1]) - 50
-#             self.partsToStartCoords[part.id] = left_offset
-#             self.partsToLengths[part.id] = len(part) - left_offset - right_offset
-
-#         self.pixelWidth = pixelWidth
-
-#         totalLength = sum(self.partsToLengths.values()) + (len(self.partsToLengths)-1)*dividerSize
-#         self.basesPerPixel = totalLength / float(pixelWidth)
-
-#         curStart = 0
-#         for regionID in self.partsToLengths:
-#             self.partsToStartPixels[regionID] = curStart
-#             curStart += (self.partsToLengths[regionID]+dividerSize) / self.basesPerPixel
-
-#     def topixels(self, g, regionID=None):
-#         pts = 0
-#         if regionID != None:
-#             pts = self.partsToStartPixels[regionID]
-#             g -= self.partsToStartCoords[regionID]
-#         else:
-#             assert len(self.partsToStartPixels) == 1
-#             g -= list(self.partsToStartCoords.values())[0]
-
-#         pos = g / float(self.basesPerPixel) + pts
-#         return pos
-
-#     def relpixels(self, g):
-#         dist = g / float(self.basesPerPixel)
-#         return dist
-
-#     def getBreakpointPositions(self, regionID):
-#         breakpoints = []
-
-#         part = self.chromPartsCollection.parts[regionID]
-
-#         curpos = 0
-#         for segment in part.segments[:-1]:
-#             curpos += len(segment)
-#             breakpoints.append(curpos)
-
-#         return breakpoints
-
 
 class Axis(object):
-    def __init__(self, scale, variant, allele):
+    def __init__(self, scale, variant, allele, zoomed=None):
         self.scale = scale
         self.allele = allele
         self.variant = variant
         self.chromPartsCollection = variant.chrom_parts(allele)
         self.height = 75
+
+        self.zoomed = zoomed
 
 
     def baseHeight(self):
@@ -220,6 +168,9 @@ class Axis(object):
             res *= 2.5
         elif width / res < 5:
             res /= 2.0
+
+        if self.zoomed:
+            res /= 10
 
         roundStart = start - (start%res)
 

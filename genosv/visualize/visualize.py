@@ -28,7 +28,7 @@ def _visualize(datahub, context=None):
                 (not sample.single_ended), (not sample.sequencer=="illumina"), zoomed=bool(context))
 
         for allele in ["alt", "ref"]:
-            axis = track.Axis(sample.tracks[allele].scale, datahub.variant, allele)
+            axis = track.Axis(sample.tracks[allele].scale, datahub.variant, allele, zoomed=bool(context))
             datahub.alleleTracks[allele]["axis"] = axis
 
     e = export.TrackCompositor(datahub, zoomed=context)
