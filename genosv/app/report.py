@@ -38,7 +38,8 @@ def _tally_support(bam):
     count = 0
     weighted_count = 0
     breakpoint_overlaps = collections.defaultdict(list)
-    breakpoint_counts = collections.defaultdict(int)
+    breakpoint_counts = collections.Counter()
+    extensions = collections.defaultdict(list)
 
     for read in bam:
         if not read.is_paired or read.is_read1:
@@ -47,9 +48,10 @@ def _tally_support(bam):
 
             cur_breakpoint_overlaps = json.loads(read.get_tag("Ov"))
             for breakpoint, info in cur_breakpoint_overlaps.items():
-                overlap, overlaps_sequence = info
+                overlap, overlaps_sequence, extension = info
                 breakpoint_overlaps[breakpoint].append(overlap)
                 breakpoint_counts[(breakpoint, overlaps_sequence)] += 1
+                extensions[breakpoint].append(extension)
 
     results = [("count", count),
                ("weighted_count", weighted_count)]
@@ -62,5 +64,10 @@ def _tally_support(bam):
         breakpoint, overlaps_sequence = breakpoint
         key = "count_{}_{}".format(breakpoint, "seq" if overlaps_sequence else "pair")
         results.append((key, count))
+
+    for breakpoint, cur_extensions in extensions.items():
+        key = "extension_{}".format(breakpoint)
+        results.append((key, numpy.mean(cur_extensions)))
+
 
     return results

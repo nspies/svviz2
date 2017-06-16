@@ -44,13 +44,14 @@ def get_overlaps(read_locus, unsequenced_insert_locus, breakpoints):
             breakpoint.start - read_locus.start,
             read_locus.end - breakpoint.start])
 
+        extension = read_locus.end - breakpoint.start
 
         if unsequenced_insert_locus:
             overlaps_sequence = not unsequenced_insert_locus.overlapsAnysense(breakpoint)
         else:
             overlaps_sequence = True
 
-        overlaps[str(breakpoint)] = (cur_overlap, overlaps_sequence)
+        overlaps[str(breakpoint)] = (cur_overlap, overlaps_sequence, extension)
         # best_overlap = max(cur_overlap, best_overlap)
         # if cur_overlap > best_overlap:
         #     best_breakpoint = breakpoint
