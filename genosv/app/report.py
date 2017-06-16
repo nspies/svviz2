@@ -12,6 +12,7 @@ def report(datahub):
     results = []
 
     results.extend(tally_support(datahub))
+    results.extend(tally_regions(datahub))
 
     result_df = pandas.DataFrame(results, columns=["sample", "allele", "key", "value"])
 
@@ -33,6 +34,35 @@ def tally_support(datahub):
                 results.append((sample_name, allele) + cur_result)
 
     return results
+
+def tally_regions(datahub):
+    results = []
+
+    for sample_name, sample in datahub.samples.items():
+        for allele in ["alt", "ref"]:
+            bam = sample.outbam(allele, "r")
+            parts = datahub.variant.chrom_parts(allele)
+            if len(parts) > 1: continue
+            part = list(parts)[0]
+            segments = part.segments
+
+            segment_overlaps = collections.defaultdict(list)
+            cur_offset = 0
+
+            for segment in segments:
+                start, end = cur_offset, cur_offset+len(segment)
+                for read in bam.fetch(part.id, start, end):
+                    overlap = read.get_overlap(start, end)
+                    segment_overlaps[segment].append(overlap)
+                cur_offset += len(segment)
+
+            for segment in segments:
+                overlaps = segment_overlaps.get(segment, [0])
+                results.append((sample_name, allele, "region_{}".format(segment), numpy.mean(overlaps)))
+
+    return results
+
+
 
 def _tally_support(bam):
     count = 0
