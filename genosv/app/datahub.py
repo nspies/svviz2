@@ -112,7 +112,7 @@ class DataHub(object):
         # TODO: if savereads, then save to a proper file, otherwise save to temporary space
         # ... or just always save
 
-        if self.args.savereads:
+        if self.args.savereads or self.args.render_only:
             outdir = self.args.outdir
         else:
             outdir = os.path.join(self.args.outdir, "genosv-temp")

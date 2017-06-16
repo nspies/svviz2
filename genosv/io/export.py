@@ -8,7 +8,7 @@ import time
 
 
 class TrackCompositor(object):
-    def __init__(self, dataHub, title=None):
+    def __init__(self, dataHub, zoomed=None, title=None):
     # def __init__(self, width, title=None): 
         self.dataHub = dataHub
         self.sections = collections.OrderedDict()
@@ -21,7 +21,11 @@ class TrackCompositor(object):
         self.betweenSectionHeight = 28
         self.trackLabelHeight = 20
 
+        self.zoomed = zoomed
+
         self._fromDataHub()
+
+
 
     def _fromDataHub(self):
         if self.title is None:
@@ -36,6 +40,27 @@ class TrackCompositor(object):
             self.addTracks(longAlleleName, sampleNames, tracks, allele)
 
     def getBounds(self, tracks, allele):
+        if self.zoomed:
+            return self.getZoomedBounds(tracks, allele, self.zoomed)
+        return self.findBestBounds(tracks, allele)
+
+    def getZoomedBounds(self, tracks, allele, zoomed):
+        scale = tracks[0].scale
+
+        if len(scale.chromPartsCollection) > 1:
+            return 0, scale.pixelWidth
+
+        part = list(scale.chromPartsCollection)[0]
+        segments = part.segments
+
+        xmin = len(segments[0]) - zoomed
+        xmax = len(part) - (len(segments[-1])-zoomed)
+        xmin, xmax = scale.topixels(xmin), scale.topixels(xmax)
+        width = xmax - xmin
+
+        return xmin, width
+
+    def findBestBounds(self, tracks, allele):
         """ calculate left and right bounds for the allele; this is based on the variant segments
         as well as the positions of the reads (we want to be able to see all the breakpoints as 
         well as all the reads) """
@@ -57,8 +82,8 @@ class TrackCompositor(object):
         axisMin = max(0, scale.topixels(len(segments[0])-100))
         axisMax = scale.topixels(min(alleleLength-len(segments[-1])+100, alleleLength))
 
-        for track in tracks:
-            track.render()
+        # for track in tracks:
+        #     track.render()
         xmin = [track.xmin for track in tracks if track.xmin is not None]
         xmin = min(xmin) if len(xmin) > 0 else 0
         xmin = min(axisMin, xmin)
@@ -79,8 +104,8 @@ class TrackCompositor(object):
     def addTracks(self, section, names, tracks, allele):
         alleleTracks = self.dataHub.alleleTracks[allele]
 
-        # for track in tracks:
-        #     track.render()
+        for track in tracks:
+            track.render()
         xmin, width = self.getBounds(tracks, allele)
 
         hasTrackWithReads = False

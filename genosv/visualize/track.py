@@ -55,6 +55,60 @@ class Scale(object):
 
         return breakpoints
 
+# class Scale(object):
+#     def __init__(self, chromPartsCollection, pixelWidth, dividerSize=25):
+#         # length is in genomic coordinates, starts is in pixels
+#         self.dividerSize = dividerSize
+#         self.partsToLengths = collections.OrderedDict()
+#         self.partsToStartPixels = collections.OrderedDict()
+
+#         self.partsToStartCoords = collections.OrderedDict()
+#         self.chromPartsCollection = chromPartsCollection
+
+#         for part in chromPartsCollection:
+#             left_offset = len(part.segments[0]) - 50
+#             right_offset = len(part.segments[-1]) - 50
+#             self.partsToStartCoords[part.id] = left_offset
+#             self.partsToLengths[part.id] = len(part) - left_offset - right_offset
+
+#         self.pixelWidth = pixelWidth
+
+#         totalLength = sum(self.partsToLengths.values()) + (len(self.partsToLengths)-1)*dividerSize
+#         self.basesPerPixel = totalLength / float(pixelWidth)
+
+#         curStart = 0
+#         for regionID in self.partsToLengths:
+#             self.partsToStartPixels[regionID] = curStart
+#             curStart += (self.partsToLengths[regionID]+dividerSize) / self.basesPerPixel
+
+#     def topixels(self, g, regionID=None):
+#         pts = 0
+#         if regionID != None:
+#             pts = self.partsToStartPixels[regionID]
+#             g -= self.partsToStartCoords[regionID]
+#         else:
+#             assert len(self.partsToStartPixels) == 1
+#             g -= list(self.partsToStartCoords.values())[0]
+
+#         pos = g / float(self.basesPerPixel) + pts
+#         return pos
+
+#     def relpixels(self, g):
+#         dist = g / float(self.basesPerPixel)
+#         return dist
+
+#     def getBreakpointPositions(self, regionID):
+#         breakpoints = []
+
+#         part = self.chromPartsCollection.parts[regionID]
+
+#         curpos = 0
+#         for segment in part.segments[:-1]:
+#             curpos += len(segment)
+#             breakpoints.append(curpos)
+
+#         return breakpoints
+
 
 class Axis(object):
     def __init__(self, scale, variant, allele):
@@ -176,7 +230,8 @@ class Axis(object):
 
 NYIWarned = False
 class ReadRenderer(object):
-    def __init__(self, rowHeight, scale, chromPartsCollection, thickerLines=False, colorCigar=True, mismatch_counts=None):
+    def __init__(self, rowHeight, scale, chromPartsCollection, thickerLines=False, colorCigar=True, 
+                 mismatch_counts=None, zoomed=False):
         self.rowHeight = rowHeight
         self.svg = None
         self.scale = scale
@@ -192,6 +247,7 @@ class ReadRenderer(object):
         self.overlapColor = "lime"
 
         self.mismatch_counts = mismatch_counts
+        self.zoomed = zoomed
 
     def render(self, alns, layout, brightness=1.0):
         # yoffset = alignmentSet.yoffset
@@ -265,8 +321,9 @@ class ReadRenderer(object):
         if highlightOverlaps:# and not isFlanking:
             self._highlightOverlaps(positionCounts, ystart, height, regionID, aln.query_name)#, isFlanking)
 
-        self.svg.text(_overlap_start_x, yoffset, "{},{}".format(aln.mapq, aln.get_tag("OV")),
-            anchor="end")
+        if not self.zoomed:
+            self.svg.text(_overlap_start_x, yoffset, "{},{}".format(aln.mapq, aln.get_tag("OV")),
+                anchor="end")
 
 
     def _drawCigar(self, alignment, yoffset, height):#, isFlanking):
@@ -300,7 +357,8 @@ class ReadRenderer(object):
                     if eachNuc or alt!=ref:
                         if not self.mismatch_counts or alt=="N" or self.mismatch_counts.query(region_id, alt, genomePosition+i):
                             width = curend-curstart
-                            width = max(width, self.scale.pixelWidth*1e-4)
+                            if not self.zoomed:
+                                width = max(width, self.scale.pixelWidth*1e-4)
                             midpoint = (curstart+curend)/2
                             # print(width, self.scale.pixelWidth, width/self.scale.pixelWidth)
                             self.svg.rect(midpoint-width/2, yoffset, width, height, fill=color, **extras)
@@ -321,7 +379,8 @@ class ReadRenderer(object):
                     curend = self.scale.topixels(genomePosition+0.5, alignment.reference_name)
 
                     width = curend-curstart
-                    width = max(width, self.scale.pixelWidth*1e-4)
+                    if not self.zoomed:
+                        width = max(width, self.scale.pixelWidth*1e-4)
                     midpoint = (curstart+curend)/2
 
                     self.svg.rect(midpoint-width/2, yoffset, width, height, fill=self.insertionColor, **extras)
@@ -333,7 +392,8 @@ class ReadRenderer(object):
                 curend = self.scale.topixels(genomePosition+0.5, alignment.reference_name)
 
                 width = curend-curstart
-                width = max(width, self.scale.pixelWidth*1e-2)
+                if not self.zoomed:
+                    width = max(width, self.scale.pixelWidth*1e-3)
                 midpoint = (curstart+curend)/2
 
                 self.svg.rect(midpoint-width/2, yoffset, width, height, fill=self.clippingColor, **extras)
@@ -428,7 +488,7 @@ class MismatchCounts(object):
 
 class Track(object):
     def __init__(self, chromPartsCollection, bam, height, width, variant, allele, thickerLines, colorCigar, paired,
-                 quick_consensus=True):
+                 quick_consensus=True, zoomed=False):
         self.chromPartsCollection = chromPartsCollection
         self.height = height
         self.width = width
@@ -457,9 +517,11 @@ class Track(object):
         self.layout = {}
         self.paired = paired
 
+        self.zoomed = zoomed
+
         self.mismatch_counts = MismatchCounts(chromPartsCollection) if quick_consensus else None
         self.readRenderer = ReadRenderer(self.rowHeight, self.scale, self.chromPartsCollection,
-                                         thickerLines, colorCigar, self.mismatch_counts)
+                                         thickerLines, colorCigar, self.mismatch_counts, zoomed)
 
     def findRow(self, start, end, regionID):
         for currow in range(len(self.rows)):
@@ -505,7 +567,8 @@ class Track(object):
             self.mismatch_counts.tally_reads(self.bam)
             print("tallying done.")
 
-    def render(self):        
+    def render(self):    
+        print("RENDER", self)    
         # if len(self.getAlignments()) == 0:
         if self.bam.count() == 0:
             xmiddle = self.scale.pixelWidth / 2.0
@@ -523,7 +586,10 @@ class Track(object):
         self.readRenderer.svg = self.svg
 
         lineWidth = 1 if not self.thickerLines else 3
-        lineWidth = lineWidth * ((self.xmax-self.xmin)/1200.0)
+        if self.zoomed:
+            lineWidth *= self.scale.relpixels(1)
+        else:
+            lineWidth = lineWidth * ((self.xmax-self.xmin)/1200.0)
 
         for part in self.chromPartsCollection:
             for vline in self.scale.getBreakpointPositions(part.id):

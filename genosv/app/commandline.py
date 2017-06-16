@@ -56,10 +56,22 @@ def parse_args(input_args):
     optional_args.add_argument("--render-only", action="store_true", help=
         "")
 
+    optional_args.add_argument("--only-plot-context", type=int, help=
+        "Only show this many nucleotides before the first breakpoint, and the last breakpoint\n"
+        "in each region (default: show as much context as needed to show all reads fully)")
+
+    optional_args.add_argument("--also-plot-context", type=int, help=
+        "Generates two plots per event, one using the default settings, and one generated \n"
+        "by zooming in on the breakpoints as per the --only-plot-context option")
+
     if len(input_args)<1:
         parser.print_help()
         sys.exit(1)
 
     args = parser.parse_args(input_args)
+    if args.only_plot_context and args.also_plot_context:
+        parser.print_help()
+        print("ERROR: you only want to use one of --only-plot-context or --also-plot-context")
+        sys.exit(1)
 
     return args
