@@ -27,13 +27,13 @@ def get_datahub():
 def run(datahub):
     """ this runs the app on the provided datahub """
     for variant in datahub.get_variants():
-        # if not datahub.args.render_only:
-        #     t0 = time.time()
-        #     datahub.genotype_cur_variant()
-        #     t1 = time.time()
-        #     print("TIME:::", t1-t0)
+        if not datahub.args.render_only:
+            t0 = time.time()
+            datahub.genotype_cur_variant()
+            t1 = time.time()
+            print("TIME:::", t1-t0)
             
-        # visualize.visualize(datahub)
+        visualize.visualize(datahub)
         report.report(datahub)
 
     datahub.cleanup()
