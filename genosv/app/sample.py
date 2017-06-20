@@ -20,6 +20,12 @@ def _get_bam_headers(variant, allele):
     header["SQ"] = sq
     return header
 
+def get_sequencer_from_bam_header(bam):
+    sequencer = None
+    for rg in bam.header.get("RG", []):
+        if "PL" in rg:
+            sequencer = rg["PL"].lower()
+    return sequencer
 
 class Sample(object):
     def __init__(self, name, bam_path, datahub, extra_args=None):
@@ -55,6 +61,10 @@ class Sample(object):
                 self.sequencer = "pacbio"
             elif numpy.isnan(mismatches) and lengths > 1000:
                 self.sequencer = "pacbio"
+
+        sequencer = get_sequencer_from_bam_header(self.bam)
+        if sequencer in ["illumina", "pacbio", "nanopore"]:
+            self.sequencer = sequencer
 
         if "sequencer" in extra_args:
             self.sequencer = extra_args["sequencer"].lower()
