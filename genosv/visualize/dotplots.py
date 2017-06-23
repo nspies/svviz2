@@ -138,10 +138,10 @@ def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
         raise YassException("Error running yass")
 
     ro.r.plot(ro.IntVector([0]), ro.IntVector([0]), type="n", 
-              main=f"{label1} : {label2}",
+              main="{} : {}".format(label1, label2),
               xaxs="i", yaxs="i", 
-              xlab=f"Position in {label1}",
-              ylab=f"Position in {label2}",
+              xlab="Position in {}".format(label1),
+              ylab="Position in {}".format(label2),
               xlim=ro.IntVector([0,len(s1)]),
               ylim=ro.IntVector([0,len(s2)]))
     
