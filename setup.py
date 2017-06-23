@@ -20,5 +20,5 @@ setup(name="genosv",
       author="Noah Spies",
       packages=find_packages(),
       entry_points={"console_scripts": ["genosv = genosv.app.main:main"]},
-      install_requires=["pysam>=0.10", "numpy", "pyfaidx", "tqdm"], 
+      install_requires=["pysam>=0.10", "numpy", "pyfaidx", "tqdm", "pandas", "numpy"], 
      )

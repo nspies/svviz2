@@ -6,6 +6,7 @@ from genosv.app import commandline
 from genosv.app.datahub import DataHub
 from genosv.visualize import visualize
 from genosv.app import report
+from genosv.visualize import dotplots
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ def run(datahub):
             
         visualize.visualize(datahub)
         report.report(datahub)
+        dotplots.generate_dotplots(datahub)
 
     datahub.cleanup()
 

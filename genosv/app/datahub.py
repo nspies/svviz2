@@ -95,6 +95,7 @@ class DataHub(object):
     def get_variants(self):
         vcf = vcfparser.VCFParser(self)
         for variant in vcf.get_variants():
+            logger.info("Working on {}".format(variant))
             self.set_cur_variant(variant)
             yield variant
 
