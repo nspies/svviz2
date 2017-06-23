@@ -22,13 +22,17 @@ class YassException(Exception):
 
 def can_generate_dotplots():
     if ro is None:
-        return False, "rpy2 could not be imported; dotplots will not be generated"
+        logger.warn("rpy2 could not be imported; dotplots will not be generated")
+        return False
     try:
-        subprocess.check_call("yass --version", shell=True)
+        subprocess.check_call("yass --version", stderr=subprocess.PIPE, shell=True)
     except subprocess.CalledProcessError:
-        return False, "yass helper program could not be run; dotplots will not be generated"
+        logger.warn("yass helper program could not be run; dotplots will not be generated")
+        return False
 
     return True
+
+_CAN_GENERATE_DOTPLOTS = can_generate_dotplots()
 
 nucs = list("ACGT")
 dinucs = ["".join(x) for x in itertools.product(nucs, repeat=2) if len(set(x))!=1]
@@ -60,6 +64,9 @@ def plot_simple_repeats(s1, s2):
 
 
 def generate_dotplots(datahub):
+    if not _CAN_GENERATE_DOTPLOTS:
+        return
+
     parts = collections.OrderedDict()
 
     for allele in ["alt", "ref"]:
