@@ -31,3 +31,17 @@ def reverse_comp(st):
 
 def str_to_bool(s):
     return s.lower() in ["1", "true", "t", "yes","y"]
+
+
+
+def match_chrom_format(chrom, keys):
+    if chrom in keys:
+        return chrom
+    if "chr" in chrom:
+        chrom2 = chrom.replace("chr", "")
+    else:
+        chrom2 = "chr{}".format(chrom)
+
+    if chrom2 in keys:
+        return chrom2
+    return chrom

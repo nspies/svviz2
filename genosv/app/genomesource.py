@@ -11,18 +11,6 @@ from genosv.remap.alignment import Alignment
 logger = logging.getLogger(__name__)
 
 
-def match_chrom_format(chrom, keys):
-    if chrom in keys:
-        return chrom
-    if "chr" in chrom:
-        chrom2 = chrom.replace("chr", "")
-    else:
-        chrom2 = "chr{}".format(chrom)
-
-    if chrom2 in keys:
-        return chrom2
-    return chrom
-
 
 PARAMS = {
     "illumina":{
@@ -84,7 +72,7 @@ class GenomeSource(object):
         self._blacklist = []
 
         for locus in blacklist_loci:
-            cur_chrom = match_chrom_format(locus.chrom, list(self.keys()))
+            cur_chrom = misc.match_chrom_format(locus.chrom, list(self.keys()))
             self._blacklist.append(intervals.Locus(cur_chrom, locus.start, locus.end, locus.strand))
 
     # @profile
@@ -190,7 +178,7 @@ class FastaGenomeSource(GenomeSource):
         self.aligner_type = aligner_type
         
     def get_seq(self, chrom, start, end, strand):
-        chrom = match_chrom_format(chrom, list(self.fasta.keys()))
+        chrom = misc.match_chrom_format(chrom, list(self.fasta.keys()))
 
         seq = self.fasta[chrom][start:end+1]
         if strand == "-":

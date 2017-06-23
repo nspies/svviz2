@@ -3,6 +3,7 @@ import logging
 from genosv.io import pairedreaditer
 from genosv.remap import alignment
 from genosv.remap.readpair import ReadPair
+from genosv.utility import misc
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ def get_reads_unpaired(sample, datahub):
 
     for region in search_regions:
         chrom, start, end = region.chrom, region.start, region.end
+        chrom = misc.match_chrom_format(chrom, sample.bam.references)
         for read in sample.bam.fetch(chrom, start, end):
             # if read.query_name != "m150105_192231_42177R_c100761782550000001823161607221526_s1_p0/138972/39862_46995":
             #     continue
