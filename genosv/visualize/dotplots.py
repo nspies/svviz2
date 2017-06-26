@@ -100,7 +100,7 @@ def draw_dotplot(part1, part2):
 
     plot_simple_repeats(part1.get_seq(), part2.get_seq())
 
-    dotplot2(part1.get_seq(), part2.get_seq())
+    # dotplot2(part1.get_seq(), part2.get_seq())
 
 
 def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
