@@ -39,9 +39,9 @@ dinucs = ["".join(x) for x in itertools.product(nucs, repeat=2) if len(set(x))!=
 trinucs = ["".join(x) for x in itertools.product(nucs, repeat=3) if len(set(x))!=1]
 
 def detect_simple_repeats(seq):
-    patterns = [["(({}){{10,}})".format(nuc) for nuc in nucs],
-                ["(({}){{5,}})".format(dinuc) for dinuc in dinucs],
-                ["(({}){{3,}})".format(trinuc) for trinuc in trinucs]]
+    patterns = [["({}){{10,}}".format(nuc) for nuc in nucs],
+                ["({}){{5,}}".format(dinuc) for dinuc in dinucs],
+                ["({}){{3,}}".format(trinuc) for trinuc in trinucs]]
 
     repeats = []
 
