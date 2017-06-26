@@ -70,8 +70,11 @@ def generate_dotplots(datahub):
 
     parts = collections.OrderedDict()
 
+    variant = datahub.variant
+    variant.align_distance = 2000
+
     for allele in ["alt", "ref"]:
-        for part in datahub.variant.chrom_parts(allele):
+        for part in variant.chrom_parts(allele):
             parts[part.id] = part
             print(part.id, part.get_seq())
 
@@ -123,10 +126,10 @@ def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
                      )
     print(gapExtend)
     
-    # yassCommand = "yass -d 1 -G -50,{} -E 10 {} {}".format(gapExtend, outpaths[0], outpaths[1])
-    # subprocess.check_call(yassCommand, shell=True)
+    yassCommand = "yass -d 1 -G -50,{} -E 1 {} {}".format(gapExtend, outpaths[0], outpaths[1])
+    subprocess.check_call(yassCommand, shell=True)
 
-    yassCommand = "yass -d 3 -G -50,{} -E 10 -o {} {} {}".format(gapExtend, tempYASSResult, outpaths[0], outpaths[1])
+    yassCommand = "yass -d 3 -G -50,{} -E 1 -o {} {} {}".format(gapExtend, tempYASSResult, outpaths[0], outpaths[1])
     proc = subprocess.Popen(yassCommand, shell=True,
         stderr=subprocess.PIPE)
     resultCode = proc.wait()
@@ -157,9 +160,9 @@ def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
             
         res = line.strip().split()
         if res[6]=="f":
-            ro.r.segments(int(res[0]), int(res[2]), int(res[1]), int(res[3]), col="blue", lwd=1)
+            ro.r.segments(int(res[0]), int(res[2]), int(res[1]), int(res[3]), col=ro.r.rgb(102, 0, 198, maxColorValue=255), lwd=1)
         else:
-            ro.r.segments(int(res[1]), int(res[2]), int(res[0]), int(res[3]), col="red", lwd=1)
+            ro.r.segments(int(res[1]), int(res[2]), int(res[0]), int(res[3]), col=ro.r.rgb(0, 198, 46, maxColorValue=255), lwd=1)
 
 
 
