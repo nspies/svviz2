@@ -5,6 +5,9 @@ import os
 import pandas
 
 from genosv.app.variants import non_negative
+from genosv.utility import statistics
+from genosv.remap import genotyping
+
 
 def report(datahub):
     results = []
@@ -23,15 +26,58 @@ def report(datahub):
     result_df.to_csv(report_path, sep="\t", index=False)
 
 
+# def get_genotype_likelihoods(datahub):
+#     results = []
+
+#     for sample_name, sample in datahub.samples.items():
+#         allele_counts1 = {}
+#         allele_counts2 = {}
+
+
+#         for allele in ["alt", "ref"]:
+#             bam = sample.outbam(allele, "r")
+#             cur_count1 = 0
+#             cur_count2 = 0
+#             for read in bam:
+#                 if not read.is_paired or read.is_read1:
+#                     cur_count1 += read.mapq
+#                     cur_count2 += read.mapq/40
+
+
+#             allele_counts1[allele] = cur_count1
+#             allele_counts2[allele] = cur_count2
+
+
+
+
+
+
+
 def tally_support(datahub):
     results = []
 
     for sample_name, sample in datahub.samples.items():
+        allele_count = {}
+        allele_mapq_sum = {}
+        allele_weighted_count = {}
+
         for allele in ["alt", "ref"]:
             bam = sample.outbam(allele, "r")
-            cur_results = _tally_support(bam)
+            cur_results, count, mapq_sum, weighted_count = _tally_support(bam)
+
+            allele_count[allele] = count
+            allele_mapq_sum[allele] = mapq_sum
+            allele_weighted_count[allele] = weighted_count
+
             for cur_result in cur_results:
                 results.append((sample_name, allele) + cur_result)
+
+        for name, value in [("count", allele_count), ("mapq", allele_mapq_sum), ("weighted", allele_weighted_count)]:
+            print(name, value)
+            cur_genotype = genotyping.calculate_genotype_likelihoods(
+                value["ref"], value["alt"])
+            results.append((sample_name, "", "GL_{}".format(name), cur_genotype[0]))
+            results.append((sample_name, "", "GQ_{}".format(name), cur_genotype[1]))
 
     return results
 
@@ -73,6 +119,7 @@ def tally_segments(datahub):
 def _tally_support(bam):
     count = 0
     weighted_count = 0
+    mapq_sum = 0
     breakpoint_overlaps = collections.defaultdict(list)
     breakpoint_counts = collections.Counter()
     extensions = collections.defaultdict(list)
@@ -81,6 +128,7 @@ def _tally_support(bam):
         if not read.is_paired or read.is_read1:
             count += 1
             weighted_count += read.mapq/40.
+            mapq_sum += (1 - statistics.phred_to_prob(read.mapq, 10))
 
             cur_breakpoint_overlaps = json.loads(read.get_tag("Ov"))
             for breakpoint, info in cur_breakpoint_overlaps.items():
@@ -96,17 +144,17 @@ def _tally_support(bam):
         key = "overlap_{}".format(breakpoint)
         results.append((key, numpy.mean(overlaps)))
 
-    for breakpoint, count in breakpoint_counts.items():
+    for breakpoint, cur_count in breakpoint_counts.items():
         breakpoint, overlaps_sequence = breakpoint
         key = "count_{}_{}".format(breakpoint, "seq" if overlaps_sequence else "pair")
-        results.append((key, count))
+        results.append((key, cur_count))
 
     for breakpoint, cur_extensions in extensions.items():
         key = "extension_{}".format(breakpoint)
         results.append((key, numpy.mean(cur_extensions)))
 
 
-    return results
+    return results, count, mapq_sum, weighted_count
 
 
 def iter_segments(datahub, allele):
