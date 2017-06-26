@@ -79,6 +79,9 @@ def tally_support(datahub):
             results.append((sample_name, "", "GL_{}".format(name), cur_genotype[0]))
             results.append((sample_name, "", "GQ_{}".format(name), cur_genotype[1]))
 
+            gt = max(zip(cur_genotype[0], ["0/0", "0/1", "1/1"]), key=lambda x:x[0])[1]
+            results.append((sample_name, "", "GT_{}".format(name), gt))
+
     return results
 
 def tally_segments(datahub):
