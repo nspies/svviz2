@@ -194,7 +194,7 @@ def tally_nearby_polymorphisms(datahub):
                     if i == 0:
                         cur_count = _tally_polymorphisms(bam, part, non_negative(end-distance), end)
                     elif i == len(segments)-1:
-                        cur_count = _tally_polymorphisms(bam, part, start, start+100)
+                        cur_count = _tally_polymorphisms(bam, part, start, start+distance)
                     else:
                         cur_count = _tally_polymorphisms(bam, part, start, end)
 

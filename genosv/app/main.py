@@ -19,7 +19,11 @@ def get_datahub():
     datahub.align_distance = 0
     for sample_name, sample in datahub.samples.items():
         logger.info("Search distance: {:,}bp".format(sample.search_distance))
-        datahub.align_distance = max(datahub.align_distance, sample.align_distance)
+
+    datahub.align_distance = max(sample.align_distance for sample in datahub.samples.values())
+    if datahub.args.align_distance is not None:
+        assert datahub.args.align_distance > 0, "--align-distance must be a positive integer"
+        datahub.align_distance = datahub.args.align_distance
     logger.info("Align distance: {:,}bp".format(sample.align_distance))
 
     return datahub

@@ -151,10 +151,10 @@ def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_
 
 
 def test():
-    print(calculate_genotype_likelihoods(10,2))
-    print(calculate_genotype_likelihoods(13,2))
-    print(calculate_genotype_likelihoods(2,40))
-    print(calculate_genotype_likelihoods(25,26))
+    print(calculate_genotype_likelihoods(0, 53))
+    # print(calculate_genotype_likelihoods(13,2))
+    # print(calculate_genotype_likelihoods(2,40))
+    # print(calculate_genotype_likelihoods(25,26))
 
 
 if __name__ == '__main__':

@@ -4,6 +4,7 @@ import math
 import numpy
 import re
 from genosv.visualize.svg import SVG
+from genosv.visualize import dotplots
 # from svviz import utilities
 # from svviz import variants
 
@@ -54,6 +55,44 @@ class Scale(object):
             breakpoints.append(curpos)
 
         return breakpoints
+
+
+class SimpleRepeatsTrack(object):
+    def __init__(self, scale, variant, allele, zoomed=None):
+        self.scale = scale
+        self.allele = allele
+        self.variant = variant
+        self.chromPartsCollection = variant.chrom_parts(allele)
+        self.height = 75
+
+        self.zoomed = zoomed
+
+    def simple_repeats(self, part):
+        seq = part.get_seq()
+        repeats = dotplots.detect_simple_repeats(seq)
+
+        return repeats
+
+
+    def baseHeight(self):
+        return 45
+
+    def render(self, scaleFactor=1.0, spacing=1.0, height=None, thickerLines=False):
+        self.height = height
+        if height == None:
+            self.height = 45 * scaleFactor
+
+        self.svg = SVG(self.scale.pixelWidth, self.height, yrelto="top", headerExtras="""preserveAspectRatio="none" """)
+        self.svg.rect(0,0,self.scale.pixelWidth, self.height, fill="blue")
+
+        for part in self.chromPartsCollection:
+            repeats = self.simple_repeats(part)
+            for repeat in repeats:
+                x1 = self.scale.topixels(repeat[0], part.id)
+                x2 = self.scale.topixels(repeat[1], part.id)
+                print("("*100, x1, x2, x2-x1)
+                print(self.scale.pixelWidth)
+                self.svg.rect(x1, 0, x2-x1, self.height, fill="red")
 
 
 class Axis(object):

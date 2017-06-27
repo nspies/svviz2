@@ -31,6 +31,12 @@ def _visualize(datahub, context=None):
             axis = track.Axis(sample.tracks[allele].scale, datahub.variant, allele, zoomed=bool(context))
             datahub.alleleTracks[allele]["axis"] = axis
 
+
+            simple_repeats_track = track.SimpleRepeatsTrack(
+                sample.tracks[allele].scale, datahub.variant, allele, zoomed=bool(context))
+            datahub.alleleTracks[allele]["Simple Repeats"] = simple_repeats_track
+
+
     e = export.TrackCompositor(datahub, zoomed=context)
     
     file_format = datahub.args.format

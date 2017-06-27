@@ -40,6 +40,10 @@ def parse_args(input_args):
     optional_args.add_argument("--savereads", action="store_true", help=
         "output the read realignments against the appropriate alt or ref allele (default: false)")
 
+    optional_args.add_argument("--align-distance", type=int, help=
+        "sequence upstream and downstream of breakpoints to include when performing re-alignment"
+        "(default: infer from data)")
+    
     optional_args.add_argument("--batch-size", type=int, default=10000, help=
         "Number of reads to analyze at once; larger batch-size values may run more quickly \n"
         "but will require more memory (default=10000)")
