@@ -82,7 +82,7 @@ def generate_dotplots(datahub):
         datahub.args.outdir, "{}.dotplots.pdf".format(datahub.variant.short_name()))
     ro.r.pdf(outpath)
 
-    print(parts.keys())
+    # print(parts.keys())
     for i, part1 in enumerate(parts.keys()):
         for part2 in list(parts.keys())[i:]:
             draw_dotplot(parts[part1], parts[part2])
@@ -95,7 +95,7 @@ def draw_dotplot(part1, part2):
     breakpoints1 = numpy.cumsum([len(segment) for segment in part1.segments])[:-1]
     breakpoints2 = numpy.cumsum([len(segment) for segment in part2.segments])[:-1]
 
-    print("::", part1.id, part2.id)
+    # print("::", part1.id, part2.id)
 
     yass_dotplot(part1.get_seq(), part2.get_seq(),
                  breakpoints1, breakpoints2,
@@ -124,10 +124,10 @@ def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
                                              / 10     # 10 nt insertion
                                              * 5      # the match bonus
                      )
-    print(gapExtend)
+    # print(gapExtend)
     
-    yassCommand = "yass -d 1 -G -50,{} -E 1 {} {}".format(gapExtend, outpaths[0], outpaths[1])
-    subprocess.check_call(yassCommand, shell=True)
+    # yassCommand = "yass -d 1 -G -50,{} -E 1 {} {}".format(gapExtend, outpaths[0], outpaths[1])
+    # subprocess.check_call(yassCommand, shell=True)
 
     yassCommand = "yass -d 3 -G -50,{} -E 1 -o {} {} {}".format(gapExtend, tempYASSResult, outpaths[0], outpaths[1])
     proc = subprocess.Popen(yassCommand, shell=True,
@@ -170,7 +170,7 @@ def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
 def dotplot2(s1, s2, wordsize=6, overlap=3, verbose=10):
     """ verbose = 0 (no progress), 1 (progress if s1 and s2 are long) or
     2 (progress in any case) """
-    print("START")
+    # print("START")
 
     doProgress = False
     if verbose > 1 or len(s1)*len(s2) > 1e6:
@@ -206,7 +206,7 @@ def dotplot2(s1, s2, wordsize=6, overlap=3, verbose=10):
 
     rasterized = ro.r["as.raster"](mat, max=mat.max())
     ro.r.rasterImage(rasterized, x1, y1, x2, y2)
-    print("/PLOT")
+    # print("/PLOT")
     # imgData = None
     # tempDir = tempfile.mkdtemp()
     # try:

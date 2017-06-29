@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
+from setuptools.extension import Extension
+from Cython.Distutils import build_ext # Cython should be installed via pysam
+import pysam
+import numpy
 import sys
 
 if sys.version_info < (3, 3):
@@ -19,6 +23,11 @@ setup(name="genosv",
       description="genosv",
       author="Noah Spies",
       packages=find_packages(),
+      ext_modules = [Extension("genosv.remap._mapq",
+                              sources=["genosv/remap/_mapq.pyx"],
+                              include_dirs=pysam.get_include()+[numpy.get_include()],
+                              define_macros=pysam.get_defines())],
+      cmdclass={'build_ext': build_ext},
       entry_points={"console_scripts": ["genosv = genosv.app.main:main"]},
-      install_requires=["pysam>=0.10", "numpy", "pyfaidx", "tqdm", "pandas", "numpy"], 
+      install_requires=["cython", "pysam>=0.10", "numpy", "pyfaidx", "tqdm", "pandas", "numpy"], 
      )

@@ -1,12 +1,16 @@
 import collections
 import logging
+# import numpy
 import pyfaidx
 import seqlib
 
 from genosv.utility import intervals, misc
-from genosv.remap import mapq
+# from genosv.remap import mapq
 from genosv.remap import ssw_aligner
 from genosv.remap.alignment import Alignment
+
+
+from genosv.remap import _mapq
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +79,6 @@ class GenomeSource(object):
             cur_chrom = misc.match_chrom_format(locus.chrom, list(self.keys()))
             self._blacklist.append(intervals.Locus(cur_chrom, locus.start, locus.end, locus.strand))
 
-    # @profile
     def align(self, read):
         alns = []
         qualities = read.original_qualities()
@@ -106,8 +109,14 @@ class GenomeSource(object):
     def score_alignment(self, aln):
         # TODO: move the mapqcalculator code to here
 
-        mc = mapq.MAPQCalculator(self)
-        aln.score = mc.get_alignment_end_score(aln)
+        # mc = mapq.MAPQCalculator(self)
+        # aln.score = mc.get_alignment_end_score(aln)
+
+        ref_seq = self.get_seq(aln.chrom, aln.reference_start, aln.reference_end, "+").upper()
+        aln.score = _mapq.get_alignment_end_score(aln._read, ref_seq)
+        # aln.score = s2
+
+        # assert numpy.isclose(aln.score, s2, rtol=1e-5), "{} :: {}".format(aln.score, s2)
 
     @property
     def aligner(self):

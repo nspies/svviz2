@@ -90,8 +90,8 @@ class SimpleRepeatsTrack(object):
             for repeat in repeats:
                 x1 = self.scale.topixels(repeat[0], part.id)
                 x2 = self.scale.topixels(repeat[1], part.id)
-                print("("*100, x1, x2, x2-x1)
-                print(self.scale.pixelWidth)
+                # print("("*100, x1, x2, x2-x1)
+                # print(self.scale.pixelWidth)
                 self.svg.rect(x1, 0, x2-x1, self.height, fill="red")
 
 
