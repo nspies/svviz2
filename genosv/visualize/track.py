@@ -75,24 +75,24 @@ class SimpleRepeatsTrack(object):
 
 
     def baseHeight(self):
-        return 45
+        return 15
 
     def render(self, scaleFactor=1.0, spacing=1.0, height=None, thickerLines=False):
         self.height = height
         if height == None:
-            self.height = 45 * scaleFactor
+            self.height = 15 * scaleFactor
 
         self.svg = SVG(self.scale.pixelWidth, self.height, yrelto="top", headerExtras="""preserveAspectRatio="none" """)
-        self.svg.rect(0,0,self.scale.pixelWidth, self.height, fill="blue")
+        self.svg.rect(0,0,self.scale.pixelWidth, self.height, fill="lightgray")
 
         for part in self.chromPartsCollection:
             repeats = self.simple_repeats(part)
             for repeat in repeats:
                 x1 = self.scale.topixels(repeat[0], part.id)
                 x2 = self.scale.topixels(repeat[1], part.id)
-                # print("("*100, x1, x2, x2-x1)
+                # print("("*100, repeat, x1, x2, x2-x1)
                 # print(self.scale.pixelWidth)
-                self.svg.rect(x1, 0, x2-x1, self.height, fill="red")
+                self.svg.rect(x1, 0, x2-x1, self.height, fill="darkred")
 
 
 class Axis(object):
