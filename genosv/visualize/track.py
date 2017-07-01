@@ -92,7 +92,17 @@ class SimpleRepeatsTrack(object):
                 x2 = self.scale.topixels(repeat[1], part.id)
                 # print("("*100, repeat, x1, x2, x2-x1)
                 # print(self.scale.pixelWidth)
-                self.svg.rect(x1, 0, x2-x1, self.height, fill="darkred")
+                if len(repeat) > 2:
+                    repeat_length = repeat[2]
+                    if repeat_length == 1:
+                        color = "darkred"
+                    elif repeat_length == 2:
+                        color = "darkblue"
+                    elif repeat_length == 3:
+                        color = "darkgreen"
+                    else:
+                        color = "black"
+                self.svg.rect(x1, 0, x2-x1, self.height, fill=color)
 
 
 class Axis(object):

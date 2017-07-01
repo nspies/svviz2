@@ -7,6 +7,7 @@ import re
 import subprocess
 import tempfile
 
+from genosv.visualize import trf
 logger = logging.getLogger(__name__)
 
 try:
@@ -39,16 +40,24 @@ dinucs = ["".join(x) for x in itertools.product(nucs, repeat=2) if len(set(x))!=
 trinucs = ["".join(x) for x in itertools.product(nucs, repeat=3) if len(set(x))!=1]
 
 def detect_simple_repeats(seq):
-    patterns = [["({}){{10,}}".format(nuc) for nuc in nucs],
-                ["({}){{5,}}".format(dinuc) for dinuc in dinucs],
-                ["({}){{3,}}".format(trinuc) for trinuc in trinucs]]
+    try:
+        repeats = trf.run_trf({"a":seq})
+        if repeats is not None:
+            repeats = repeats.pop("a", [])
+            return [(s,e,len(r)) for (s,e,r) in repeats]
+    except:
+        raise
+
+    patterns = {1: ["({}){{10,}}".format(nuc) for nuc in nucs],
+                2: ["({}){{5,}}".format(dinuc) for dinuc in dinucs],
+                3: ["({}){{3,}}".format(trinuc) for trinuc in trinucs]}
 
     repeats = []
 
-    for pattern in patterns:
+    for unit, pattern in patterns.items():
         pattern = "|".join(pattern)
         for match in re.finditer(pattern, seq):
-            repeats.append((match.start(), match.end()))
+            repeats.append((match.start(), match.end(), unit))
 
     return repeats
 
