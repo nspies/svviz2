@@ -182,7 +182,7 @@ def tally_nearby_polymorphisms(datahub):
     results = []
 
     for sample_name, sample in datahub.samples.items():
-        for allele in ["alt", "ref"]:
+        for allele in ["alt", "ref", "amb"]:
             bam = sample.outbam(allele, "r")
 
             parts_to_segments = collections.defaultdict(list)
