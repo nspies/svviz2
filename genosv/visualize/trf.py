@@ -23,7 +23,7 @@ def run_trf(seqs):
     # the important parameter appears to be the "minscore" parameter,
     # which we'll set to 30 so that we can find repeats of length 15 and up
     # (with a match score of 2)
-    trf_command = "trf {} 2 5 7 80 10 30 200 -l 6 -ngs".format(fasta_path)
+    trf_command = "trf {} 2 5 7 80 10 30 200 -l 6 -h -ngs".format(fasta_path)
 
     trf_proc = subprocess.Popen(trf_command, shell=True, 
         stdout=subprocess.PIPE, stderr=subprocess.PIPE)

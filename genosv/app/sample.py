@@ -110,22 +110,23 @@ class Sample(object):
         return self._bam
 
     def add_realignments(self, aln_sets):
-        for allele in ["alt", "ref"]:
+        for allele in ["alt", "ref", "amb"]:
             self.outbam(allele, "w")
 
         for aln_set in aln_sets:
-            if aln_set.supports_allele != "amb":
-                aln_set.supporting_aln.fix_flags()
+            # if aln_set.supports_allele != "amb":
+            if aln_set.supporting_aln is None: continue
+            aln_set.supporting_aln.fix_flags()
 
-                outbam = self.outbam(aln_set.supports_allele, "w")
-                if self.single_ended:
-                    outbam.write(aln_set.supporting_aln._read)
-                else:
-                    outbam.write(aln_set.supporting_aln.aln1._read)
-                    outbam.write(aln_set.supporting_aln.aln2._read)
+            outbam = self.outbam(aln_set.supports_allele, "w")
+            if self.single_ended:
+                outbam.write(aln_set.supporting_aln._read)
+            else:
+                outbam.write(aln_set.supporting_aln.aln1._read)
+                outbam.write(aln_set.supporting_aln.aln2._read)
 
     def finish_writing_realignments(self):
-        for allele in ["alt", "ref"]:
+        for allele in ["alt", "ref", "amb"]:
             self.outbams[allele].close()
             self.outbams.pop(allele)
             try:

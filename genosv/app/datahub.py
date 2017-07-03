@@ -120,7 +120,7 @@ class DataHub(object):
             misc.ensure_dir(outdir)
 
         for sample_name, sample in self.samples.items():
-            for allele in ["ref", "alt"]:
+            for allele in ["ref", "alt", "amb"]:
                 sample.outbam_paths[allele] = os.path.join(
                     outdir,
                     ".".join([variant.short_name(), sample_name, allele, "bam"]))

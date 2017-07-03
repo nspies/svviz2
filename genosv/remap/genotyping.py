@@ -143,8 +143,10 @@ def assign_reads_to_alleles(aln_sets, ref_breakpoint_collection, alt_breakpoint_
             aln = aln_set.alt_pairs[0]
             alt_total += set_read_supports_allele(
                 aln_set, aln, "alt", alt_score, read_stats, alt_breakpoint_collection, min_overlap=4)
-
-
+        elif len(aln_set.ref_pairs) > 0:
+            aln = aln_set.ref_pairs[0]
+            aln_set.supports_allele = "amb"
+            aln_set.supporting_aln = aln
 
 
     return ref_total, alt_total
