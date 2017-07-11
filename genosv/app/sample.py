@@ -120,10 +120,21 @@ class Sample(object):
 
             outbam = self.outbam(aln_set.supports_allele, "w")
             if self.single_ended:
+                if aln_set.supports_allele=="amb":
+                    if aln_set.supporting_aln.chrom not in self.datahub.variant.seqs("amb"):
+                        continue
+
                 outbam.write(aln_set.supporting_aln._read)
             else:
+                if aln_set.supports_allele=="amb":
+                    if aln_set.supporting_aln.aln1.chrom not in self.datahub.variant.seqs("amb"):
+                        continue
+                    if aln_set.supporting_aln.aln2.chrom not in self.datahub.variant.seqs("amb"):
+                        continue
+
                 outbam.write(aln_set.supporting_aln.aln1._read)
                 outbam.write(aln_set.supporting_aln.aln2._read)
+
 
     def finish_writing_realignments(self):
         for allele in ["alt", "ref", "amb"]:
@@ -133,7 +144,7 @@ class Sample(object):
                 bam_sort_index(self.outbam_paths[allele])
             except:
                 print("ERROR!"*30)
-
+                raise
 
     def outbam(self, allele, mode):
         if mode == "w":

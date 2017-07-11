@@ -55,7 +55,7 @@ class VCFParser(object):
 
 def get_sequence_defined(variant, datahub):
     # print("::", variant.id, variant.start, variant.stop, len(variant.ref))
-    assert variant.stop-variant.start == len(variant.ref)
+    assert variant.stop-variant.start == len(variant.ref), str(variant)
 
     if len(variant.alts[0])==1 and variant.ref[0]==variant.alts[0][0]:
         # we need to add 1 to the start position to take into account the fact that the
