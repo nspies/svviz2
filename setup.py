@@ -25,9 +25,10 @@ setup(name="genosv",
       packages=find_packages(),
       ext_modules = [Extension("genosv.remap._mapq",
                               sources=["genosv/remap/_mapq.pyx"],
-                              include_dirs=pysam.get_include()+[numpy.get_include()],
+                              include_dirs=pysam.get_include()+[numpy.get_include()], # should be imported when used
                               define_macros=pysam.get_defines())],
       cmdclass={'build_ext': build_ext},
+      setup_requires=["cython"],
       entry_points={"console_scripts": ["genosv = genosv.app.main:main"]},
       install_requires=["cython", "pysam>=0.10", "numpy", "pyfaidx", "tqdm", "pandas", "numpy"], 
      )

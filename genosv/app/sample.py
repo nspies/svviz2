@@ -42,7 +42,12 @@ class Sample(object):
         self.outbams = {}
         self.outbam_paths = {}
 
+        import time
+        t0 = time.time()
         self.read_statistics = ReadStatistics(self.bam)
+        t1 = time.time()
+        logger.info("TIME to get read statistics:{:.1f}s".format(t1-t0))
+        
         if self.read_statistics.orientations == "any":
             self.single_ended = True
 
@@ -80,10 +85,9 @@ class Sample(object):
     def search_distance(self):
         if self._search_distance is None:
             if self.single_ended:
-                longest_reads = numpy.percentile(self.read_statistics.readLengths, 99)
-                if longest_reads > 1e5:
-                    self._search_distance = 10000
                 self._search_distance = 1000
+                if self.datahub.args.fast:
+                    self._search_distance = 150
             else:
                 search_distance = numpy.percentile(self.read_statistics.insertSizes, 99)
                 self._search_distance = int(search_distance)

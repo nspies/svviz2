@@ -41,7 +41,7 @@ def parse_args(input_args):
         "output the read realignments against the appropriate alt or ref allele (default: false)")
 
     optional_args.add_argument("--align-distance", type=int, help=
-        "sequence upstream and downstream of breakpoints to include when performing re-alignment"
+        "sequence upstream and downstream of breakpoints to include when performing re-alignment\n"
         "(default: infer from data)")
     
     optional_args.add_argument("--batch-size", type=int, default=10000, help=
@@ -56,7 +56,11 @@ def parse_args(input_args):
         "Only when using bwa as the aligner backend, when this option is enabled,\n"
         "reads will only be aligned locally around the breakpoints and not also against\n"
         "the full reference genome (default: False)")
-
+    
+    optional_args.add_argument("--fast", action="store_true", help=
+        "More aggressively skip reads that are unlikely to overlap\n"
+        "the breakpoints (default: false)")
+    
     optional_args.add_argument("--render-only", action="store_true", help=
         "")
 

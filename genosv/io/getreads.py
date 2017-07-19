@@ -48,14 +48,23 @@ def get_read_pairs(sample, datahub):
     search_regions = datahub.variant.search_regions(sample.search_distance)
     paired_read_iter = pairedreaditer.PairedReadIter(sample.bam, search_regions)
 
+    import time
+    t0 = time.time()
+    
     for read_pair in paired_read_iter:
         # if read_pair[0].query_name != "HA2WPADXX:44:1:714777:0":
             # continue
         cur_read_pairs.append(read_pair)
         if datahub.args.batch_size is not None and len(cur_read_pairs) >= datahub.args.batch_size:
+            t1 = time.time()
+            logger.info("TIME to read batch: {:.1f}s".format(t1-t0))
+            t0 = time.time()
+            
             yield cur_read_pairs
             logger.info("Loading more read pairs...")
             cur_read_pairs = []
+    t1 = time.time()
+    logger.info("TIME to read batch: {:.1f}s".format(t1-t0))
 
     yield cur_read_pairs
 

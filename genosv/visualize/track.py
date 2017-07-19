@@ -632,6 +632,9 @@ class Track(object):
 
                 self.readRenderer.render(cur_reads, self.layout, brightness=brightness)
 
+            for read_name, read in read_buffer.items():
+                self.readRenderer.render([read], self.layout, brightness=brightness)                
+                
         return self.rendered
 
 

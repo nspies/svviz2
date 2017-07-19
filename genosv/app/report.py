@@ -18,7 +18,7 @@ def report(datahub):
 
     result_df = pandas.DataFrame(results, columns=["sample", "allele", "key", "value"])
 
-    print(result_df)
+    #print(result_df)
 
     report_filename = "{}.report.tsv".format(datahub.variant.short_name())
     report_path = os.path.join(datahub.args.outdir, report_filename)
@@ -73,7 +73,7 @@ def tally_support(datahub):
                 results.append((sample_name, allele) + cur_result)
 
         for name, value in [("count", allele_count), ("mapq", allele_mapq_sum), ("weighted", allele_weighted_count)]:
-            print(name, value)
+            #print(name, value)
             cur_genotype = genotyping.calculate_genotype_likelihoods(
                 value["ref"], value["alt"])
             results.append((sample_name, "", "GL_{}".format(name), cur_genotype[0]))
