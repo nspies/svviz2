@@ -49,7 +49,10 @@ PARAMS = {
     }
 }
 
-class GenomeSource(object):
+## These are pretty much identical to the versions in genomeview, but each method
+## adds some functionality to deal with bwa/ssw alignment
+
+class GenomeSource:
     def __init__(self, names_to_contigs, aligner_type="bwa"):
         self.names_to_contigs = collections.OrderedDict(names_to_contigs)
         self._bwa = None
