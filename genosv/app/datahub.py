@@ -13,6 +13,7 @@ from genosv.io import saverealignments
 from genosv.remap import maprealign
 from genosv.remap import genotyping
 from genosv.utility import misc
+from genosv.utility import intervals
 
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,58 @@ def name_from_bam_path(bampath):
 #     return os.path.basename(bampath).replace(".bed", "").replace(".sorted", "").replace(".sort", "").replace(".", "_").replace("+", "_").replace(".gz", "")
 
 
+def get_internal_segments(sv, extend=20):
+    chrom_parts = sv.chrom_parts("ref")
+
+    internal_segments = []
+
+    for part in chrom_parts:
+        for i, segment in enumerate(part.segments):
+            if i == len(part.segments)-1:
+                internal_segment = intervals.Locus(segment.chrom, segment.start-extend, segment.start+extend, "+")
+                internal_segments.append(internal_segment)
+            elif i == 0:
+                internal_segment = intervals.Locus(segment.chrom, segment.end-extend, segment.end+extend, "+")
+                internal_segments.append(internal_segment)
+            else:
+                internal_segment = intervals.Locus(segment.chrom, segment.start-extend, segment.end+extend, "+")
+                internal_segments.append(internal_segment)
+
+    return internal_segments
+
+def _get_pair_locus(aln1, aln2):
+    assert aln1.reference_name == aln2.reference_name
+    chrom = aln1.reference_name
+    start = min(aln1.reference_start, aln2.reference_start)
+    end = max(aln1.reference_end, aln2.reference_end)
+    locus = intervals.Locus(chrom, start, end, "+")
+
+    return locus
+
+def _pair_passes(pair, segments):
+    read1 = pair.original_read_ends["1"]
+    read2 = pair.original_read_ends["2"]
+
+    if not read1.is_proper_pair:
+        return True
+    for read in [read1, read2]:
+        for pos in [0, -1]:
+            if read.cigartuples[pos][0] in [4,5] and read.cigartuples[pos][1] > 20:
+                return False
+    locus = _get_pair_locus(read1, read2)    
+    if intervals.overlaps(locus, segments):
+        return True
+    return False
+
+    
+def filter_pair_batch(batch, variant):
+    passing = []
+    segments = get_internal_segments(variant)
+    
+    for pair in batch:
+        if _pair_passes(pair, segments):
+            passing.append(pair)
+    return passing
 
 class DataHub(object):
     def __init__(self):
@@ -39,14 +92,9 @@ class DataHub(object):
 
 
     def genotype_cur_variant(self):
-        temp_storage = {}
-
         for sample_name, sample in self.samples.items():
             ref_count = 0
             alt_count = 0
-
-            # sample.set_bwa_params(datahub.realigner)
-            temp_storage[sample_name] = []
 
             for batch in getreads.get_read_batch(sample, self):
                 if sample.single_ended:
@@ -54,8 +102,12 @@ class DataHub(object):
                 else:
                     logger.info("Analyzing {} read pairs".format(len(batch)))
 
+                    if self.args.fast:
+                        print("BEFORE::", len(batch))
+                        batch = filter_pair_batch(batch, self.variant)
+                        print("AFTER:: ", len(batch))
+                        
                 aln_sets = maprealign.map_realign(batch, self, sample)
-                # aln_sets = map_realign(batch, datahub.realigner, sample)
 
                 cur_ref_count, cur_alt_count = genotyping.assign_reads_to_alleles(
                     aln_sets,
@@ -65,21 +117,13 @@ class DataHub(object):
                 ref_count += cur_ref_count
                 alt_count += cur_alt_count
 
-                # if self.args.savereads:
-                    # saverealignments.save_realignments(aln_sets, sample, self)
-
-                # temp_storage[sample_name].extend(aln_sets)
-
                 sample.add_realignments(aln_sets)
 
             print("REF:", ref_count, "ALT:", alt_count)
 
             sample.finish_writing_realignments()
 
-            # bam_sort_index(sample.ref_bam_path)
-            # bam_sort_index(sample.alt_bam_path)
-        # return temp_storage
-
+            
     def __getstate__(self):
         """ allows pickling of DataHub()s """
         state = self.__dict__.copy()
@@ -94,10 +138,14 @@ class DataHub(object):
 
     def get_variants(self):
         vcf = vcfparser.VCFParser(self)
+        count = 0
         for variant in vcf.get_variants():
             logger.info("Working on {}".format(variant))
             self.set_cur_variant(variant)
             yield variant
+            count += 1
+        if count == 0:
+            logger.error("Found no variants in file -- is it formatted properly?")
 
     def set_cur_variant(self, variant):
         self.variant = variant

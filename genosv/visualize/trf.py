@@ -24,12 +24,16 @@ def run_trf(seqs):
     # which we'll set to 30 so that we can find repeats of length 15 and up
     # (with a match score of 2)
     trf_command = "trf {} 2 5 7 80 10 30 200 -l 6 -h -ngs".format(fasta_path)
-
+    #logger.info("Running tandem repeat finder: '{}'".format(trf_command))
+                
     trf_proc = subprocess.Popen(trf_command, shell=True, 
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    result_code = trf_proc.wait()
+        stdout=subprocess.PIPE)#, stderr=subprocess.PIPE)
 
-    if result_code != 0:
+    stdout, _ = trf_proc.communicate()
+
+    #logger.info("... done running trf.")
+
+    if trf_proc.returncode != 0:
         logger.warn("Failed to run trf (tandem repeat finder); please install from "
                     "http://tandem.bu.edu/trf/trf.download.html, rename binary to 'trf' and "
                     "move into your $PATH")
@@ -37,7 +41,7 @@ def run_trf(seqs):
 
     seqs_to_trfs = collections.defaultdict(list)
     cur_seq = None
-    for line in trf_proc.stdout:
+    for line in stdout.splitlines():
         line = line.decode("utf8").strip()
         if line.startswith("@"):
             cur_seq = line[1:]

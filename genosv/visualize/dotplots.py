@@ -85,7 +85,7 @@ def generate_dotplots(datahub):
     for allele in ["alt", "ref"]:
         for part in variant.chrom_parts(allele):
             parts[part.id] = part
-            print(part.id, part.get_seq())
+            #print(part.id, part.get_seq())
 
     outpath = os.path.join(
         datahub.args.outdir, "{}.dotplots.pdf".format(datahub.variant.short_name()))
