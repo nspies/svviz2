@@ -8,6 +8,9 @@ from genosv.visualize import visualize
 from genosv.app import report
 from genosv.visualize import dotplots
 
+FORMAT = '%(asctime)s - %(name)-25s - %(levelname)-5s - %(message)s'
+DATEFMT = "%Y-%m-%d %H:%M:%S"
+logging.basicConfig(format=FORMAT, level=logging.DEBUG, datefmt=DATEFMT)
 logger = logging.getLogger(__name__)
 
 

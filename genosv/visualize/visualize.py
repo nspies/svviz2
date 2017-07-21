@@ -74,8 +74,11 @@ def _visualize(datahub, context=None):
             for sample_name, sample in datahub.samples.items():
                 bam_path = sample.outbam_paths[allele].replace(".bam", ".sorted.bam") ## XXX todo: refactor
                 class_ = SVSingleEndBAMTrack if sample.single_ended else SVPairedEndBAMTrack
+
                 bam_track = class_(sample_name, bam_path, part.segments)
                 bam_track.color_fn = color_by_strand_with_mapq
+                bam_track.draw_read_labels = True
+
                 genome_view.add_track(bam_track)
 
             axis = ChromSegmentAxis(part.id, part.segments)

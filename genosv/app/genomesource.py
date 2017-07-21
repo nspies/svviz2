@@ -105,6 +105,7 @@ class GenomeSource:
                 aln.chrom = self.keys()[aln.reference_id]
                 self.score_alignment(aln)
 
+                aln.set_tag("mq", read.mapq)
                 alns.append(aln)
     
         return alns

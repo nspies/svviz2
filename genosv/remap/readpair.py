@@ -38,6 +38,12 @@ class ReadPair(object):
                 cur_alns = genome_source.align(original_read)
                 end_alns[end].extend(cur_alns)
 
+                # if self.original_read_ends["1"].query_name == "HA2WPADXX:21:3:257317:0":    
+                #     for aln in cur_alns:
+                #         print(aln._read)
+
+
+
         pair_alns = []
         for aln1 in end_alns["1"]:
             for aln2 in end_alns["2"]:
@@ -55,22 +61,22 @@ class ReadPair(object):
         self.ref_pairs.sort(key=lambda x: x.score, reverse=True)
         self.alt_pairs.sort(key=lambda x: x.score, reverse=True)
 
-        
-        # print(self.name)
-        # print("REF")
-        # for pair in self.ref_pairs:
-        #     print(pair.loci, pair.score, pair.aln1.cigarstring, pair.aln2.cigarstring, 
-        #         pair.aln1.score, pair.aln2.score,
-        #         pair.concordant(self.read_stats),
-        #         pair.mapq)
-        # print("ALT")
-        # for pair in self.alt_pairs:
-        #     print(pair.loci, pair.score, pair.aln1.cigarstring, pair.aln2.cigarstring, 
-        #         pair.aln1.score, pair.aln2.score,
-        #         pair.concordant(self.read_stats),
-        #         pair.mapq)
+        # if self.original_read_ends["1"].query_name == "HA2WPADXX:21:3:257317:0":    
+        #     print(self.name)
+        #     print("REF")
+        #     for pair in self.ref_pairs:
+        #         print(pair.loci, pair.score, pair.aln1.cigarstring, pair.aln2.cigarstring, 
+        #             pair.aln1.score, pair.aln2.score,
+        #             pair.concordant(self.read_stats),
+        #             pair.mapq)
+        #     print("ALT")
+        #     for pair in self.alt_pairs:
+        #         print(pair.loci, pair.score, pair.aln1.cigarstring, pair.aln2.cigarstring, 
+        #             pair.aln1.score, pair.aln2.score,
+        #             pair.concordant(self.read_stats),
+        #             pair.mapq)
 
-        # print("///")
+        #     print("///")
 
 
         # if len(self.ref_pairs)+len(self.alt_pairs) > 0:
