@@ -1,12 +1,45 @@
 import logging
 import numpy
-import os
 
-from genosv.visualize import track
 from genosv.io import export
 from genosv.app import genomesource
 
+from genomeview import Document, ViewRow, GenomeView
+from genomeview.track import TrackLabel
+from genomeview.axis import Axis, get_ticks
+from genomeview.bamtrack import SingleEndBAMTrack, PairedEndBAMTrack
+
 logger = logging.getLogger(__name__)
+
+
+
+def get_bounds(datahub, allele, part):
+    start = len(part)
+    end = 0
+
+    for sample in datahub.samples.values():
+        for read in sample.outbam(allele, "r").fetch(part.id):
+            start = min(start, read.reference_start)
+            end = max(end, read.reference_end)
+
+    if start > end:
+        return 0, len(part)
+
+    width = end - start
+    start -= width * 0.1
+    end += width * 0.1
+
+    start = max(start, 0)
+    end = min(end, len(part))
+    
+    return int(start), int(end)
+
+def get_bounds_zoomed(part, context_bases):
+    start = len(part.segments[0]) - context_bases
+    end = len(part) - (len(part.segments[-1])-context_bases)
+
+    return start, end
+
 
 
 # TODO: this is genosv.visualize.visualize.visualize -- awkward!
@@ -20,32 +53,8 @@ def visualize(datahub):#, temp_storage):
     else:
         _visualize(datahub)
 
-def get_bounds(datahub, allele, part):
-    start = len(part)
-    end = 0
-
-    for sample in datahub.samples.values():
-        for read in sample.outbam(allele, "r").fetch(part.id):
-            start = min(start, read.reference_start)
-            end = max(end, read.reference_end)
-
-    width = end - start
-    start -= width * 0.1
-    end += width * 0.1
-    
-    return int(start), int(end)
-
-def get_bounds_zoomed(part, context_bases):
-    start = len(part.segments[0]) - context_bases
-    end = len(part) - (len(part.segments[-1])-context_bases)
-
-    return start, end
 
 def _visualize(datahub, context=None):
-    from genomeview import Document, ViewRow, GenomeView
-    from genomeview.track import TrackLabel
-    from genomeview.axis import Axis
-
     doc = Document(1500)
     doc.elements.append(TrackLabel(str(datahub.variant)))
 
@@ -66,9 +75,9 @@ def _visualize(datahub, context=None):
                 bam_path = sample.outbam_paths[allele].replace(".bam", ".sorted.bam") ## XXX todo: refactor
                 class_ = SVSingleEndBAMTrack if sample.single_ended else SVPairedEndBAMTrack
                 bam_track = class_(sample_name, bam_path, part.segments)
+                bam_track.color_fn = color_by_strand_with_mapq
                 genome_view.add_track(bam_track)
 
-            # axis = Axis(part.id)
             axis = ChromSegmentAxis(part.id, part.segments)
             genome_view.add_track(axis)
             row.add_view(genome_view)
@@ -79,53 +88,24 @@ def _visualize(datahub, context=None):
         doc.elements.append(TrackLabel(track_label))
         doc.elements.append(row)
 
-    with open("temp.svg", "w") as f:
-        for l in doc.render():
-            f.write(l+"\n")
-        #     for sample_name, sample in datahub.samples.items():
-        # sample.tracks = {}
+
+    export.export(doc, datahub, context)
 
 
+#### TODO: this should move elsewhere!!
 
+def color_by_strand_with_mapq(interval):
+    color = numpy.array([128,0,128])
+    if interval.strand == "-":
+        color = numpy.array([255,0,0])
 
-# # def _visualize(datahub, context=None):
-#     for sample_name, sample in datahub.samples.items():
-#         sample.tracks = {}
-#         for allele in ["alt", "ref"]:
-#             bam = sample.outbam(allele, "r")
-#             sample.tracks[allele] = track.Track(
-#                 datahub.variant.chrom_parts(allele), bam, 3000, 4000, datahub.variant, allele, False, True,
-#                 (not sample.single_ended), (not sample.sequencer=="illumina"), zoomed=bool(context))
+    brightness = 0.2 + (interval.read.mapq/40.0*0.8)
 
-#         for allele in ["alt", "ref"]:
-#             axis = track.Axis(sample.tracks[allele].scale, datahub.variant, allele, zoomed=bool(context))
-#             datahub.alleleTracks[allele]["axis"] = axis
-
-
-#             simple_repeats_track = track.SimpleRepeatsTrack(
-#                 sample.tracks[allele].scale, datahub.variant, allele, zoomed=bool(context))
-#             datahub.alleleTracks[allele]["Simple Repeats"] = simple_repeats_track
-
-
-#     e = export.TrackCompositor(datahub, zoomed=context)
+    if brightness != 1.0:
+        color = color * brightness + numpy.array([255., 255., 255.])*(1-brightness)
     
-#     file_format = datahub.args.format
-#     converter = export.getExportConverter(file_format)
-
-#     context_label = ".zoomed{}".format(context) if context else ""
-
-#     outpath = os.path.join(datahub.args.outdir,
-#                            "{}{}.{}".format(datahub.variant.short_name(), context_label, file_format))
-#     mode = "w" if file_format=="svg" else "wb"
-
-#     with open(outpath, mode) as outf:
-#         d = export.convertSVG(e.render(), file_format, converter)
-#         outf.write(d)
-
-    
-from genomeview.axis import Axis, get_ticks
-from genomeview.bamtrack import SingleEndBAMTrack, PairedEndBAMTrack
-
+    color = "rgb({},{},{})".format(*map(int, color))
+    return color
 
 def render_breakpoints(renderer, bam_track):
     if len(bam_track.intervals_to_rows) > 0:            
@@ -172,7 +152,6 @@ class ChromSegmentAxis(Axis):
 
     def render(self, renderer):
         start, end = self.scale.start, self.scale.end
-        # yield from renderer.line(self.scale.topixels(start), 5, self.scale.topixels(end), 5)
         
         cur_start = 0
         arrow_size = 20
@@ -186,6 +165,7 @@ class ChromSegmentAxis(Axis):
             if x < 0 or x > self.scale.pixel_width: continue
 
             yield from renderer.line(x, y, x, 20)
+
             anchor = "middle"
             if x < 50 and i == 0:
                 anchor = "start"
@@ -194,9 +174,7 @@ class ChromSegmentAxis(Axis):
                 anchor = "end"
                 x = max(x, self.scale.pixel_width-5)
 
-
             yield from renderer.text(x, y+30, label, anchor=anchor, size=16)
-
 
 
         for segment in self.chrom_segments:
