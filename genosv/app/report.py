@@ -113,7 +113,7 @@ def tally_segments(datahub):
 
             for _,_,_,segment in iter_segments(datahub, allele):
                 overlaps = segment_overlaps.get(segment, [0])
-                results.append((sample_name, allele, "region_{}".format(segment), numpy.mean(overlaps)))
+                results.append((sample_name, allele, "{}.region_{}".format(segment.id, segment), numpy.mean(overlaps)))
 
     return results
 
@@ -200,7 +200,7 @@ def tally_nearby_polymorphisms(datahub):
 
                     kinds = ["n_mismatch_low", "n_mismatch_high", "n_indel_low", "n_indel_high", "n_total"]
                     for kind, value in zip(kinds, cur_count):
-                        key = "{}_{}".format(segment, kind)
+                        key = "{}.{}_{}".format(segment.id, segment, kind)
                         results.append((sample_name, allele, key, value))
 
     return results
