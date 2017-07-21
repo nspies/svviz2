@@ -27,6 +27,8 @@ def get_reads_unpaired(sample, datahub):
         for read in sample.bam.fetch(chrom, start, end):
             # if read.query_name != "m150105_192231_42177R_c100761782550000001823161607221526_s1_p0/138972/39862_46995":
             #     continue
+            if datahub.args.min_mapq and read.mapq < datahub.args.min_mapq:
+                continue
 
             cur_reads.append(alignment.Alignment(read))
             if datahub.args.batch_size is not None and len(cur_reads) >= datahub.args.batch_size:
@@ -47,6 +49,8 @@ def get_read_pairs(sample, datahub):
     cur_read_pairs = []
     search_regions = datahub.variant.search_regions(sample.search_distance)
     paired_read_iter = pairedreaditer.PairedReadIter(sample.bam, search_regions)
+    if datahub.args.min_mapq:
+        paired_read_iter.pair_min_mapq = datahub.args.min_mapq
 
     import time
     t0 = time.time()

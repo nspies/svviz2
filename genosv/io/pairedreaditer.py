@@ -28,6 +28,8 @@ class PairedReadIter(object):
 
         self.N_count = 0
 
+        self.pair_min_mapq = None
+
     def format_chrom(self, chrom):
         original = chrom
         if chrom in self.bam.references:
@@ -60,8 +62,12 @@ class PairedReadIter(object):
                 if read.query_name in self.unpaired_reads:
                     if self.is_mate(read):
                         pair = [read, self.unpaired_reads.pop(read.query_name)]
+                        if self.pair_min_mapq and min(read.mapq for read in pair) < self.pair_min_mapq:
+                            continue
                         yield self.convert_pair(pair)
                 else:
+                    if self.pair_min_mapq and read.mapq < self.pair_min_mapq:
+                        continue
                     self.unpaired_reads[read.query_name] = read
                     if self.max_unpaired_reads is not None:
                         if len(self.unpaired_reads) > self.max_unpaired_reads:

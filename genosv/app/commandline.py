@@ -40,6 +40,10 @@ def parse_args(input_args):
     optional_args.add_argument("--savereads", action="store_true", help=
         "output the read realignments against the appropriate alt or ref allele (default: false)")
 
+    optional_args.add_argument("--min-mapq", type=int, help=
+        "only reads with mapq>=MIN_MAPQ will be analyzed; when analyzing paired-end data,\n"
+        "at least one read end must be near the breakpoints with this mapq (default:0)")
+    
     optional_args.add_argument("--align-distance", type=int, help=
         "sequence upstream and downstream of breakpoints to include when performing re-alignment\n"
         "(default: infer from data)")
