@@ -7,6 +7,7 @@ import re
 import subprocess
 import tempfile
 
+from genosv.utility import misc
 from genosv.visualize import trf
 logger = logging.getLogger(__name__)
 
@@ -85,20 +86,23 @@ def generate_dotplots(datahub):
     for allele in ["alt", "ref"]:
         for part in variant.chrom_parts(allele):
             parts[part.id] = part
-            #print(part.id, part.get_seq())
+            print(part.id, part.get_seq())
 
+    import time
     outpath = os.path.join(
         datahub.args.outdir, "{}.dotplots.pdf".format(datahub.variant.short_name()))
+
     ro.r.pdf(outpath)
 
-    # print(parts.keys())
+    t0 = time.time()
     for i, part1 in enumerate(parts.keys()):
         for part2 in list(parts.keys())[i:]:
             draw_dotplot(parts[part1], parts[part2])
 
     ro.r["dev.off"]()
 
-
+    t1 = time.time()
+    logging.debug("TIME for dotplots: {:.1f}s".format(t1-t0))
 
 def draw_dotplot(part1, part2):
     breakpoints1 = numpy.cumsum([len(segment) for segment in part1.segments])[:-1]
@@ -106,11 +110,18 @@ def draw_dotplot(part1, part2):
 
     # print("::", part1.id, part2.id)
 
-    yass_dotplot(part1.get_seq(), part2.get_seq(),
-                 breakpoints1, breakpoints2,
-                 part1.id, part2.id)
+    # yass_dotplot(part1.get_seq(), part2.get_seq(),
+    #              breakpoints1, breakpoints2,
+    #              part1.id, part2.id)
 
-    plot_simple_repeats(part1.get_seq(), part2.get_seq())
+    # plot_simple_repeats(part1.get_seq(), part2.get_seq())
+
+    dotplot = simple_dotplot(part1.get_seq(), part2.get_seq())
+
+    draw_simple_dotplot(dotplot,
+        (0,len(part1)), (0,len(part2)),
+        breakpoints1, breakpoints2,
+        part1.id, part2.id)
 
     # dotplot2(part1.get_seq(), part2.get_seq())
 
@@ -174,6 +185,76 @@ def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
             ro.r.segments(int(res[1]), int(res[2]), int(res[0]), int(res[3]), col=ro.r.rgb(0, 198, 46, maxColorValue=255), lwd=1)
 
 
+
+
+def simple_dotplot(s1, s2, wordsize=5, scale=650):
+    # scale is the final size of the output matrix for visualization
+
+    l1 = int((len(s1)-wordsize))
+    l2 = int((len(s2)-wordsize))
+
+    width = int(numpy.ceil(l1/max([l1,l2]) * scale))
+    height = int(numpy.ceil(l2/max([l1,l2]) * scale))
+    
+    mat = numpy.zeros((height, width))
+    binsize = l1/(width-1)
+    
+    kmertopos1 = collections.defaultdict(list)
+    
+    # get positions of kmers in s1
+    for i in range(l1):
+        kmer = s1[i:i+wordsize]
+        kmertopos1[kmer].append(i)
+
+    # find all matching kmers from s2
+    for i in range(l2):
+        kmer = s2[i:i+wordsize]
+        positions = kmertopos1[kmer]
+        
+        positions = (numpy.array(positions)/binsize).astype(int)
+        y = int(i/binsize)
+
+        mat[y, positions] += 1
+
+    # find all rev-comp kmer matches from s2
+    for i in range(l2):
+        kmer = misc.reverse_comp(s2[i:i+wordsize])
+        positions = kmertopos1[kmer]
+
+        positions = (numpy.array(positions)/binsize).astype(int)
+        y = int(i/binsize)
+
+        mat[y, positions] += 1
+    
+    mat = mat[::-1,]
+
+    return mat
+
+def draw_simple_dotplot(mat, xlim=None, ylim=None, breakpointsx=None, breakpointsy=None, labelx="", labely=""):
+    if xlim is None:
+        x1 = 0
+        x2 = mat.shape[0]
+    else:
+        x1, x2 = xlim
+    if ylim is None:
+        y1 = 0
+        y2 = mat.shape[1]
+    else:
+        y1, y2 = ylim
+
+    ro.r.plot(numpy.array([0]),
+           xlim=numpy.array([x1,x2]),
+           ylim=numpy.array([y1,y2]),
+           type="n", bty="n",
+           main="xyz", xlab=labelx, ylab=labely)
+
+    rasterized = ro.r["as.raster"](mat.max()-mat, max=mat.max())
+    ro.r.rasterImage(rasterized, x1, y1, x2, y2)
+
+    if breakpointsx is not None:
+        ro.r.abline(v=numpy.array(breakpointsx), lty=2, col="gray")
+    if breakpointsy is not None:
+        ro.r.abline(h=numpy.array(breakpointsy), lty=2, col="gray")
 
 
 def dotplot2(s1, s2, wordsize=6, overlap=3, verbose=10):
