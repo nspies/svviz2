@@ -187,7 +187,7 @@ def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
 
 
 
-def simple_dotplot(s1, s2, wordsize=5, scale=650):
+def simple_dotplot(s1, s2, wordsize=8, scale=650):
     # scale is the final size of the output matrix for visualization
 
     l1 = int((len(s1)-wordsize))
@@ -242,11 +242,15 @@ def draw_simple_dotplot(mat, xlim=None, ylim=None, breakpointsx=None, breakpoint
     else:
         y1, y2 = ylim
 
+    main = ""
+    if labelx and labely:
+        main = "{} : {}".format(labelx, labely)
+
     ro.r.plot(numpy.array([0]),
            xlim=numpy.array([x1,x2]),
            ylim=numpy.array([y1,y2]),
            type="n", bty="n",
-           main="xyz", xlab=labelx, ylab=labely)
+           main=main, xlab=labelx, ylab=labely)
 
     rasterized = ro.r["as.raster"](mat.max()-mat, max=mat.max())
     ro.r.rasterImage(rasterized, x1, y1, x2, y2)
