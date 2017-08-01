@@ -258,7 +258,8 @@ def draw_simple_dotplot(mat, xlim=None, ylim=None, breakpointsx=None, breakpoint
            type="n", bty="n",
            main=main, xlab=labelx, ylab=labely)
 
-    rasterized = ro.r["as.raster"](mat.max()-mat, max=mat.max())
+    mat = mat.max()-mat
+    rasterized = ro.r["as.raster"](mat, max=mat.max())
     ro.r.rasterImage(rasterized, x1, y1, x2, y2)
 
     if breakpointsx is not None:
