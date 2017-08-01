@@ -4,9 +4,12 @@ import logging
 import numpy
 import os
 import re
+import pyfaidx
+import seqlib
 import subprocess
 import tempfile
 
+from genosv.utility import intervals
 from genosv.utility import misc
 from genosv.visualize import trf
 logger = logging.getLogger(__name__)
@@ -99,10 +102,15 @@ def generate_dotplots(datahub):
         for part2 in list(parts.keys())[i:]:
             draw_dotplot(parts[part1], parts[part2])
 
+    if not datahub.args.only_realign_locally:
+        do_homology_search(datahub)
+
     ro.r["dev.off"]()
 
     t1 = time.time()
     logging.debug("TIME for dotplots: {:.1f}s".format(t1-t0))
+
+
 
 def draw_dotplot(part1, part2):
     breakpoints1 = numpy.cumsum([len(segment) for segment in part1.segments])[:-1]
@@ -126,63 +134,63 @@ def draw_dotplot(part1, part2):
     # dotplot2(part1.get_seq(), part2.get_seq())
 
 
-def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
-    tempDir = tempfile.mkdtemp()
+# def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
+#     tempDir = tempfile.mkdtemp()
     
-    outpaths = []
+#     outpaths = []
     
-    for i, seq in enumerate([s1,s2]):
-        tempFastaPath = os.path.join(tempDir, "seq{}.fa".format(i))
-        outpaths.append(tempFastaPath)
-        with open(tempFastaPath, "w") as tempFastaFile:
-            tempFastaFile.write(">seq\n{}".format(seq))
-            tempFastaFile.close()
+#     for i, seq in enumerate([s1,s2]):
+#         tempFastaPath = os.path.join(tempDir, "seq{}.fa".format(i))
+#         outpaths.append(tempFastaPath)
+#         with open(tempFastaPath, "w") as tempFastaFile:
+#             tempFastaFile.write(">seq\n{}".format(seq))
+#             tempFastaFile.close()
 
-    tempYASSResult = os.path.join(tempDir, "result.txt")
+#     tempYASSResult = os.path.join(tempDir, "result.txt")
     
-    gapExtend = -int(max([len(s1), len(s2)]) / 2      # half the length the entire sequence
-                                             / 10     # 10 nt insertion
-                                             * 5      # the match bonus
-                     )
-    # print(gapExtend)
+#     gapExtend = -int(max([len(s1), len(s2)]) / 2      # half the length the entire sequence
+#                                              / 10     # 10 nt insertion
+#                                              * 5      # the match bonus
+#                      )
+#     # print(gapExtend)
     
-    # yassCommand = "yass -d 1 -G -50,{} -E 1 {} {}".format(gapExtend, outpaths[0], outpaths[1])
-    # subprocess.check_call(yassCommand, shell=True)
+#     # yassCommand = "yass -d 1 -G -50,{} -E 1 {} {}".format(gapExtend, outpaths[0], outpaths[1])
+#     # subprocess.check_call(yassCommand, shell=True)
 
-    yassCommand = "yass -d 3 -G -50,{} -E 1 -o {} {} {}".format(gapExtend, tempYASSResult, outpaths[0], outpaths[1])
-    proc = subprocess.Popen(yassCommand, shell=True,
-        stderr=subprocess.PIPE)
-    resultCode = proc.wait()
+#     yassCommand = "yass -d 3 -G -50,{} -E 1 -o {} {} {}".format(gapExtend, tempYASSResult, outpaths[0], outpaths[1])
+#     proc = subprocess.Popen(yassCommand, shell=True,
+#         stderr=subprocess.PIPE)
+#     resultCode = proc.wait()
     
-    if resultCode != 0:
-        raise YassException("Check that yass is installed correctly")
-    stderr = proc.stderr.readlines()[0].decode()
-    if "Error" in stderr:
-        print("Error running yass: '{}'".format(stderr))
-        raise YassException("Error running yass")
+#     if resultCode != 0:
+#         raise YassException("Check that yass is installed correctly")
+#     stderr = proc.stderr.readlines()[0].decode()
+#     if "Error" in stderr:
+#         print("Error running yass: '{}'".format(stderr))
+#         raise YassException("Error running yass")
 
-    ro.r.plot(ro.IntVector([0]), ro.IntVector([0]), type="n", 
-              main="{} : {}".format(label1, label2),
-              xaxs="i", yaxs="i", 
-              xlab="Position in {}".format(label1),
-              ylab="Position in {}".format(label2),
-              xlim=ro.IntVector([0,len(s1)]),
-              ylim=ro.IntVector([0,len(s2)]))
+#     ro.r.plot(ro.IntVector([0]), ro.IntVector([0]), type="n", 
+#               main="{} : {}".format(label1, label2),
+#               xaxs="i", yaxs="i", 
+#               xlab="Position in {}".format(label1),
+#               ylab="Position in {}".format(label2),
+#               xlim=ro.IntVector([0,len(s1)]),
+#               ylim=ro.IntVector([0,len(s2)]))
     
-    # for breakpoint in breakpoints1:
-    ro.r.abline(v=breakpoints1, lty=2, col="gray")
+#     # for breakpoint in breakpoints1:
+#     ro.r.abline(v=breakpoints1, lty=2, col="gray")
         
-    # for breakpoint in breakpoints2:
-    ro.r.abline(h=breakpoints2, lty=2, col="gray")
+#     # for breakpoint in breakpoints2:
+#     ro.r.abline(h=breakpoints2, lty=2, col="gray")
         
-    for line in open(tempYASSResult):
-        if line.startswith("#"):continue
+#     for line in open(tempYASSResult):
+#         if line.startswith("#"):continue
             
-        res = line.strip().split()
-        if res[6]=="f":
-            ro.r.segments(int(res[0]), int(res[2]), int(res[1]), int(res[3]), col=ro.r.rgb(102, 0, 198, maxColorValue=255), lwd=1)
-        else:
-            ro.r.segments(int(res[1]), int(res[2]), int(res[0]), int(res[3]), col=ro.r.rgb(0, 198, 46, maxColorValue=255), lwd=1)
+#         res = line.strip().split()
+#         if res[6]=="f":
+#             ro.r.segments(int(res[0]), int(res[2]), int(res[1]), int(res[3]), col=ro.r.rgb(102, 0, 198, maxColorValue=255), lwd=1)
+#         else:
+#             ro.r.segments(int(res[1]), int(res[2]), int(res[0]), int(res[3]), col=ro.r.rgb(0, 198, 46, maxColorValue=255), lwd=1)
 
 
 
@@ -261,54 +269,89 @@ def draw_simple_dotplot(mat, xlim=None, ylim=None, breakpointsx=None, breakpoint
         ro.r.abline(h=numpy.array(breakpointsy), lty=2, col="gray")
 
 
-def dotplot2(s1, s2, wordsize=6, overlap=3, verbose=10):
-    """ verbose = 0 (no progress), 1 (progress if s1 and s2 are long) or
-    2 (progress in any case) """
-    # print("START")
 
-    doProgress = False
-    if verbose > 1 or len(s1)*len(s2) > 1e6:
-        doProgress = True
-    
-    l1 = int((len(s1)-wordsize)/overlap+2)
-    l2 = int((len(s2)-wordsize)/overlap+2)
 
-    mat = numpy.ones((l1, l2), dtype="int8")
-    mat[:] = 1
+def cluster_loci(loci):
+    loci_by_chrom = collections.defaultdict(list)
+    for locus in loci:
+        loci_by_chrom[locus.chrom].append(locus)
 
-    for i in range(0, len(s1)-wordsize, overlap):
-        if i % 1000 == 0 and doProgress:
-            logger.info("  dotplot progress: {} of {} rows done".format(i, len(s1)-wordsize))
-        word1 = s1[i:i+wordsize]
+    clustered = []
+    for chrom in loci_by_chrom:
+        clustered.extend(
+            intervals.unionLoci(loci_by_chrom[chrom], 500)
+            )
 
-        for j in range(0, len(s2)-wordsize, overlap):
-            word2 = s2[j:j+wordsize]
+    return clustered
 
-            if word1 == word2 or word1 == word2[::-1]:
-                mat[int(i/overlap), int(j/overlap)] = 0
+def find_homologous_regions(seq, genomesource, window_size=500, offset=500):
+    homologous_regions = []
 
-    x1 = 0
-    y1 = 0
-    x2 = mat.shape[0]
-    y2 = mat.shape[1]
+    for i in range(0, max(1, len(seq)-window_size), offset):
+        print("---", i, "---")
 
-    ro.r.plot(numpy.array([0]),
-           xlim=numpy.array([x1,x2]),
-           ylim=numpy.array([y1,y2]),
-           type="n", bty="n",
-           main="", xlab="", ylab="")
+        curseq = seq[i:i+window_size]
 
-    rasterized = ro.r["as.raster"](mat, max=mat.max())
-    ro.r.rasterImage(rasterized, x1, y1, x2, y2)
-    # print("/PLOT")
-    # imgData = None
-    # tempDir = tempfile.mkdtemp()
-    # try:
-    #     path = os.path.join(tempDir, "dotplot.png")
-    #     misc.imsave(path, mat)
-    #     imgData = open(path, "rb").read()
-    # except Exception as e:
-    #     logging.error("Error generating dotplots:'{}'".format(e))
-    # finally:
-    #     shutil.rmtree(tempDir)
-    # return Image(imgData)
+        cur_alns = genomesource.bwa.align(curseq, secondary_hit_cutoff=0.1)
+        for cur_aln in cur_alns[1:]:
+            chrom = genomesource.bwa.ChrIDToName(cur_aln.reference_id)
+            locus = intervals.Locus(chrom, cur_aln.reference_start, cur_aln.reference_end, "+")
+            homologous_regions.append(locus)
+
+            print(cur_aln)
+        print()
+
+    clustered = cluster_loci(homologous_regions)
+    for l in clustered:
+        print(l)
+
+    return clustered
+
+def do_homology_search(datahub):
+    logger.info("Finding homologous genomic regions (segmental duplications)...")
+
+    variant = datahub.variant
+
+    for part in variant.chrom_parts("ref"):
+        seq = part.get_seq()
+        homologous_regions = find_homologous_regions(
+            seq, datahub.genome)
+        plot_homologous_regions(seq, homologous_regions, datahub.genome, label=part.id)
+
+    # also look for any reasonably-sized segments that are unique to the alt allele
+    ref_ids = set(segment.id for part in variant.chrom_parts("ref") for segment in part.segments)
+    alt_ids = set(segment.id for part in variant.chrom_parts("alt") for segment in part.segments)
+    alt_only_ids = alt_ids - ref_ids
+    alt_only_segments = [segment for part in variant.chrom_parts("alt") for segment in part.segments
+                         if segment.id in alt_only_ids]
+
+    for segment in alt_only_segments:
+        if len(segment) >= 50:
+            seq = datahub.variant.sources[segment.chrom].get_seq(
+                segment.chrom, segment.start, segment.end, segment.strand)
+
+            homologous_regions = find_homologous_regions(
+                seq, datahub.genome)
+            plot_homologous_regions(seq, homologous_regions, datahub.genome, 
+                label="segment_{}".format(segment))
+
+
+def plot_homologous_regions(seq, homologous_regions, genomesource, label):
+    # from rpy2 import robjects as ro
+
+    # ro.r.pdf("temp.pdf")
+    from genosv.visualize import dotplots
+
+    for region in cluster_loci(homologous_regions):
+        if len(region) < len(seq) * 0.9:
+            len_diff = int((len(seq)-len(region))/2)
+            region._start -= len_diff
+            region._end += len_diff
+        other_seq = genomesource.get_seq(
+            region.chrom, region.start, region.end, "+")
+        
+        d = dotplots.simple_dotplot(seq, other_seq)
+        dotplots.draw_simple_dotplot(d, xlim=(0, len(seq)), ylim=(region.start, region.end),
+            labelx=label, labely=region.chrom)
+
+    # ro.r["dev.off"]()

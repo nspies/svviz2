@@ -41,8 +41,8 @@ def run(datahub):
             t1 = time.time()
             print("TIME:::", t1-t0)
             
-        visualize.visualize(datahub)
-        report.report(datahub)
+        # visualize.visualize(datahub)
+        # report.report(datahub)
         dotplots.generate_dotplots(datahub)
 
     datahub.cleanup()

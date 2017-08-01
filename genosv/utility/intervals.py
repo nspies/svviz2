@@ -5,7 +5,7 @@ def switchStrand(x):
     elif x == "-":
         return "+"
     
-def unionLoci(loci):
+def unionLoci(loci, extend=0):
     assert len(set(x.chrom for x in loci)) == 1, "Can only take union of loci on the same chromosome"
     assert len(set(x.strand for x in loci)) == 1, "Can only take union of loci on the same strand"
 
@@ -14,7 +14,7 @@ def unionLoci(loci):
     union = [Locus.fromlocus(loci[0])]
 
     for locus in loci[1:]:
-        if union[-1].end < locus.start:
+        if union[-1].end+extend < locus.start-extend:
             union.append(locus)
         else:
             union[-1]._end = max(union[-1].end, locus.end)

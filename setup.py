@@ -34,8 +34,6 @@ def get_defines():
             return list(self)[i]
     return Defines()
 
-# try:
-#     from Cython.Build import cythonize
 extensions = [
     Extension("genosv.remap._mapq",
               sources=["genosv/remap/_mapq.pyx"],
@@ -43,14 +41,6 @@ extensions = [
               define_macros=get_defines()
               )
     ]
-
-# except ImportError:
-#     extensions = [Extension("genosv.remap._mapq",
-#                             sources=["genosv/remap/_mapq.c"],
-#                             include_dirs=get_includes(),
-#                             define_macros=get_defines()
-#                             )
-#                  ]
 
 
 setup(name="genosv",
@@ -61,6 +51,6 @@ setup(name="genosv",
       ext_modules = extensions,
       setup_requires=["cython"],
       entry_points={"console_scripts": ["genosv = genosv.app.main:main"]},
-      install_requires=["pysam>=0.10", "numpy", "pyfaidx", "tqdm", "pandas", "numpy"], 
+      install_requires=["pysam>=0.10", "numpy", "pyfaidx", "tqdm", "pandas", "numpy", "seqlib", "genomeview"], 
       python_requires=">=3.3"
      )
