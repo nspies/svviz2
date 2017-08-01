@@ -4,10 +4,8 @@ import logging
 import numpy
 import os
 import re
-import pyfaidx
-import seqlib
 import subprocess
-import tempfile
+# import tempfile
 
 from genosv.utility import intervals
 from genosv.utility import misc
