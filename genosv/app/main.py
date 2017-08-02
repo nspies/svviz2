@@ -44,7 +44,7 @@ def run(datahub):
         visualize.visualize(datahub)
         report.report(datahub)
         dotplots.generate_dotplots(datahub)
-
+        
     datahub.cleanup()
 
 def main():

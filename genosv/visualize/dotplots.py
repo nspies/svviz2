@@ -258,9 +258,11 @@ def draw_simple_dotplot(mat, xlim=None, ylim=None, breakpointsx=None, breakpoint
            type="n", bty="n",
            main=main, xlab=labelx, ylab=labely)
 
-    mat = mat.max()-mat
-    rasterized = ro.r["as.raster"](mat, max=mat.max())
-    ro.r.rasterImage(rasterized, x1, y1, x2, y2)
+    if mat.max() > mat.min():
+        mat = mat.max()-mat
+
+        rasterized = ro.r["as.raster"](mat, max=mat.max())
+        ro.r.rasterImage(rasterized, x1, y1, x2, y2)
 
     if breakpointsx is not None:
         ro.r.abline(v=numpy.array(breakpointsx), lty=2, col="gray")
@@ -291,7 +293,9 @@ def find_homologous_regions(seq, genomesource, window_size=500, offset=500):
 
         curseq = seq[i:i+window_size]
 
-        cur_alns = genomesource.bwa.align(curseq, secondary_hit_cutoff=0.1)
+        cur_alns = genomesource.bwa.align(curseq, secondary_hit_cutoff=0.5)
+        print("BEST:", cur_alns[0])
+
         for cur_aln in cur_alns[1:]:
             chrom = genomesource.bwa.ChrIDToName(cur_aln.reference_id)
             locus = intervals.Locus(chrom, cur_aln.reference_start, cur_aln.reference_end, "+")
@@ -312,10 +316,12 @@ def do_homology_search(datahub):
     variant = datahub.variant
 
     for part in variant.chrom_parts("ref"):
+        breakpoints = numpy.cumsum([len(segment) for segment in part.segments])[:-1]
+
         seq = part.get_seq()
         homologous_regions = find_homologous_regions(
             seq, datahub.genome)
-        plot_homologous_regions(seq, homologous_regions, datahub.genome, label=part.id)
+        plot_homologous_regions(seq, homologous_regions, datahub.genome, part.id, breakpoints)
 
     # also look for any reasonably-sized segments that are unique to the alt allele
     ref_ids = set(segment.id for part in variant.chrom_parts("ref") for segment in part.segments)
@@ -335,7 +341,7 @@ def do_homology_search(datahub):
                 label="segment_{}".format(segment))
 
 
-def plot_homologous_regions(seq, homologous_regions, genomesource, label):
+def plot_homologous_regions(seq, homologous_regions, genomesource, label, breakpoints=None):
     # from rpy2 import robjects as ro
 
     # ro.r.pdf("temp.pdf")
@@ -346,11 +352,12 @@ def plot_homologous_regions(seq, homologous_regions, genomesource, label):
             len_diff = int((len(seq)-len(region))/2)
             region._start -= len_diff
             region._end += len_diff
+
         other_seq = genomesource.get_seq(
-            region.chrom, region.start, region.end, "+")
-        
+            region.chrom, region.start, region.end, "+").upper()  
+
         d = dotplots.simple_dotplot(seq, other_seq)
         dotplots.draw_simple_dotplot(d, xlim=(0, len(seq)), ylim=(region.start, region.end),
-            labelx=label, labely=region.chrom)
+            labelx=label, labely=region.chrom, breakpointsx=breakpoints)
 
     # ro.r["dev.off"]()
