@@ -10,10 +10,19 @@ logger = logging.getLogger(__name__)
 def only_nucs(seq):
     return set(list(seq)) <= set(list("ACGT"))
 
+def fix_vcf_header(vcf):
+    if not "END" in vcf.header.info:
+        # this is probably a bug in pysam, where it doesn't parse the END coordinate into variant.stop
+        # if it's not defined in the header but doesn't let you read it through variant.info["END"]
+        
+        vcf.header.add_line(
+            """##INFO=<ID=END,Number=1,Type=Integer,Description="End coordinate (exclusive)">""")
+
 class VCFParser(object):
     def __init__(self, datahub):
         self.datahub = datahub
         self.vcf = pysam.VariantFile(datahub.args.variants, drop_samples=True)
+        fix_vcf_header(self.vcf)
 
     def get_variants(self):
         breakends = {}
@@ -41,11 +50,10 @@ class VCFParser(object):
                 else:
                     assert not variant.id in breakends
                     breakends[variant.id] = variant
-            elif only_nucs(variant.ref) and only_nucs(variant.alts[0]):
-                if sv_type == "DEL":
-                    yield get_deletion(variant, self.datahub)
-                elif sv_type == "INS":
-                    yield get_sequence_defined(variant, self.datahub)
+            elif sv_type == "DEL":
+                yield get_deletion(variant, self.datahub)
+            elif only_nucs(variant.ref) and only_nucs(variant.alts[0]) and sv_type == "INS":
+                yield get_sequence_defined(variant, self.datahub)
             else:
                 logger.warn("SKIPPING VARIANT: {}".format(variant))
 
@@ -76,6 +84,14 @@ def get_breakend(first, second, datahub):
     return parse_breakend(first, second, datahub)
 
 def get_deletion(variant, datahub):
+    # if variant.stop-1 > variant.start:
+    #     stop = variant.stop
+    # # elif "END" in variant.info:
+    #     # stop = int(variant.info["END"])
+    # else:
+    #     errstr = "Error parsing event: '{}' -- missing 'END' coordinate; is END defined in the VCF header?"
+    #     raise IOError(errstr.format("{}:{}-{} ({})".format(variant.chrom, variant.start, variant.stop, variant)))
+
     deletion  = variants.Deletion.from_breakpoints(variant.chrom, variant.start, variant.stop-1,
                                                    datahub, variant.id)
     print("))))DEL:", deletion)

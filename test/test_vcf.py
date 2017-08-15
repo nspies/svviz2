@@ -118,3 +118,31 @@ def test_sequence_defined_vcf(sequence_defined_vcf):
             assert (chrom, start) == ("1", 30100010)
         elif v.name == "EVENT2":
             assert (chrom, start, end) == ("2", 220010532, 220010532+11-1)
+
+
+@pytest.fixture
+def deletion_vcf(tmpdir):
+    vcf_path = str(tmpdir.join("svs.vcf"))
+
+    with open(vcf_path, "w") as vcf:
+        vcf.write(VCFHEADER)
+        vcf.write(VCFEXAMPLE_DEL)
+
+    # print(open(vcf_path).read())
+    return vcf_path
+
+
+def test_sequence_deletion_vcf(deletion_vcf):
+    datahub = DataHub()
+    datahub.args = mock.Mock(variants=deletion_vcf)
+    datahub.align_distance = 1000
+
+    print("")
+    parser = VCFParser(datahub)
+    variants = list(parser.get_variants())
+
+    assert len(variants) == 1
+    for v in variants:
+        chrom, start = v.breakpoints[0].chrom, v.breakpoints[0].start
+        end = v.breakpoints[1].start
+        assert (chrom, start, end) == ("2", 321681, 321886)

@@ -294,7 +294,8 @@ def find_homologous_regions(seq, genomesource, window_size=500, offset=500):
         curseq = seq[i:i+window_size]
 
         cur_alns = genomesource.bwa.align(curseq, secondary_hit_cutoff=0.5)
-        print("BEST:", cur_alns[0])
+
+        if len(cur_alns) > 0: print("BEST:", cur_alns[0])
 
         for cur_aln in cur_alns[1:]:
             chrom = genomesource.bwa.ChrIDToName(cur_aln.reference_id)
