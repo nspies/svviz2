@@ -94,6 +94,7 @@ def generate_dotplots(datahub):
         datahub.args.outdir, "{}.dotplots.pdf".format(datahub.variant.short_name()))
 
     ro.r.pdf(outpath)
+    ro.r.par(pty="s") # makes the output graphs square, irrespective of the dimensions of the device
 
     t0 = time.time()
     for i, part1 in enumerate(parts.keys()):
