@@ -167,11 +167,15 @@ def get_interesting_reads(sample, allele, part):
 
 
 def draw_read_dotplots(datahub, sample):
+    reads_to_plot = []
     for allele in ["alt", "ref"]:
         for part in datahub.variant.chrom_parts(allele):
-            reads = get_interesting_reads(sample, allele, part)
+            reads_to_plot.extend(get_interesting_reads(sample, allele, part)[:2])
 
-            for read in reads[:2]:
+
+    for read in reads_to_plot:
+        for allele in ["alt", "ref"]:
+            for part in datahub.variant.chrom_parts(allele):
                 dotplot = simple_dotplot(
                     part.get_seq(), read.query_sequence)
 
