@@ -82,6 +82,7 @@ def generate_dotplots(datahub):
     parts = collections.OrderedDict()
 
     variant = datahub.variant
+    old_align_distance = variant.align_distance
     variant.align_distance = 2000
 
     for allele in ["alt", "ref"]:
@@ -99,7 +100,13 @@ def generate_dotplots(datahub):
     t0 = time.time()
     for i, part1 in enumerate(parts.keys()):
         for part2 in list(parts.keys())[i:]:
-            draw_dotplot(parts[part1], parts[part2])
+            draw_chrompart_dotplot(parts[part1], parts[part2])
+
+    variant.align_distance = old_align_distance
+
+    for sample_name, sample in datahub.samples.items():
+        if sample.sequencer in ["pacbio", "nanopore"]:
+            draw_read_dotplots(datahub, sample)
 
     if not datahub.args.only_realign_locally:
         do_homology_search(datahub)
@@ -111,9 +118,14 @@ def generate_dotplots(datahub):
 
 
 
-def draw_dotplot(part1, part2):
-    breakpoints1 = numpy.cumsum([len(segment) for segment in part1.segments])[:-1]
-    breakpoints2 = numpy.cumsum([len(segment) for segment in part2.segments])[:-1]
+def draw_chrompart_dotplot(part1, part2):
+    """
+    compares part1 to part2 -- eg, ref_part1 vs ref_part2
+    """
+
+    # XXX refactor
+    breakpoints1 = get_breakpoints(part1)
+    breakpoints2 = get_breakpoints(part2)
 
     # print("::", part1.id, part2.id)
 
@@ -131,6 +143,43 @@ def draw_dotplot(part1, part2):
         part1.id, part2.id)
 
     # dotplot2(part1.get_seq(), part2.get_seq())
+
+
+def get_breakpoints(part):
+    print("::", part.id, [len(segment) for segment in part.segments])
+    return numpy.cumsum([len(segment) for segment in part.segments])[:-1]
+
+def get_interesting_region(part):
+    breakpoints = get_breakpoints(part)
+    return breakpoints[0], breakpoints[-1]
+
+def get_interesting_reads(sample, allele, part):
+    start, end = get_interesting_region(part)
+    bam = sample.outbam(allele, "r")
+
+    reads = []
+    for read in bam.fetch(part.id, start, end+1):
+        if read.reference_start < start and read.reference_end > end:
+            reads.append(read)
+
+    reads.sort(key=lambda x: (x.mapq, x.reference_length), reverse=True)
+    return reads
+
+
+def draw_read_dotplots(datahub, sample):
+    for allele in ["alt", "ref"]:
+        for part in datahub.variant.chrom_parts(allele):
+            reads = get_interesting_reads(sample, allele, part)
+
+            for read in reads[:2]:
+                dotplot = simple_dotplot(
+                    part.get_seq(), read.query_sequence)
+
+                draw_simple_dotplot(
+                    dotplot,
+                    (0,len(part)), (0, len(read.query_sequence)),
+                    get_breakpoints(part), [],
+                    part.id, read.query_name[:15])
 
 
 # def yass_dotplot(s1, s2, breakpoints1, breakpoints2, label1, label2):
@@ -237,6 +286,17 @@ def simple_dotplot(s1, s2, wordsize=8, scale=650):
 
     return mat
 
+def adjust_boundaries(x1, x2, y1, y2):
+    diff = (x2-x1) - (y2-y1)
+    if diff > 2:
+        y1 -= int(diff/2)
+        y2 += int(diff/2)
+    elif diff < -2:
+        x1 -= int(diff/2)
+        x2 += int(diff/2)
+
+    return numpy.array([x1,x2]), numpy.array([y1,y2])
+
 def draw_simple_dotplot(mat, xlim=None, ylim=None, breakpointsx=None, breakpointsy=None, labelx="", labely=""):
     if xlim is None:
         x1 = 0
@@ -249,13 +309,16 @@ def draw_simple_dotplot(mat, xlim=None, ylim=None, breakpointsx=None, breakpoint
     else:
         y1, y2 = ylim
 
+    xlim, ylim = adjust_boundaries(x1, x2, y1, y2)
+
     main = ""
     if labelx and labely:
         main = "{} : {}".format(labelx, labely)
 
-    ro.r.plot(numpy.array([0]),
-           xlim=numpy.array([x1,x2]),
-           ylim=numpy.array([y1,y2]),
+    ro.r.plot(
+           numpy.array([0]),
+           xlim=xlim,
+           ylim=ylim,
            type="n", bty="n",
            main=main, xlab=labelx, ylab=labely)
 
