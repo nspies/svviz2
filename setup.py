@@ -36,7 +36,7 @@ def get_defines():
 
 extensions = [
     Extension("genosv.remap._mapq",
-              sources=["genosv/remap/_mapq.pyx"],
+              sources=["src/genosv/remap/_mapq.pyx"],
               include_dirs=get_includes(),
               define_macros=get_defines()
               )
@@ -44,10 +44,13 @@ extensions = [
 
 
 setup(name="genosv",
-      version=get_version(open('genosv/__init__.py').read()),
+      version=get_version(open('src/genosv/__init__.py').read()),
       description="genosv",
       author="Noah Spies",
-      packages=find_packages(),
+      
+      packages = find_packages("src"),
+      package_dir = {"": "src"},
+
       ext_modules = extensions,
       setup_requires=["cython"],
       entry_points={"console_scripts": ["genosv = genosv.app.main:main"]},

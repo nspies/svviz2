@@ -14,7 +14,7 @@ def fix_vcf_header(vcf):
     if not "END" in vcf.header.info:
         # this is probably a bug in pysam, where it doesn't parse the END coordinate into variant.stop
         # if it's not defined in the header but doesn't let you read it through variant.info["END"]
-        
+
         vcf.header.add_line(
             """##INFO=<ID=END,Number=1,Type=Integer,Description="End coordinate (exclusive)">""")
 
@@ -52,8 +52,12 @@ class VCFParser(object):
                     breakends[variant.id] = variant
             elif sv_type == "DEL":
                 yield get_deletion(variant, self.datahub)
+            elif sv_type == "INS" and ("INS:ME" in variant.alts[0] or "MEINFO" in variant.info):
+                raise NotImplementedError("not yet implemented: mobile element insertions")
             elif only_nucs(variant.ref) and only_nucs(variant.alts[0]) and sv_type == "INS":
                 yield get_sequence_defined(variant, self.datahub)
+            elif sv_type == "TRA":
+                yield get_translocation(variant, self.datahub)
             else:
                 logger.warn("SKIPPING VARIANT: {}".format(variant))
 
@@ -63,7 +67,7 @@ class VCFParser(object):
 
 def get_sequence_defined(variant, datahub):
     # print("::", variant.id, variant.start, variant.stop, len(variant.ref))
-    assert variant.stop-variant.start == len(variant.ref), str(variant)
+    assert variant.stop-variant.start == len(variant.ref), "{}:{}-{}({}), {}".format(variant.chrom, variant.start, variant.stop, variant.rlen, variant)
 
     if len(variant.alts[0])==1 and variant.ref[0]==variant.alts[0][0]:
         # we need to add 1 to the start position to take into account the fact that the
@@ -179,7 +183,14 @@ def parse_breakend(record1, record2, datahub):
     # print(breakpoint1, breakpoint2)
     return variants.Breakend(breakpoint1, breakpoint2, datahub, result1["id"])
 
+def get_translocation(record, datahub):
+    breakpoint1 = Locus(record.chrom, record.start, record.start, "+")
+    breakpoint2 = Locus(record.info["CHR2"], record.end, record.end, 
+                        "+" if record.info["STRAND"]=="+" else "-")
 
+    variants.Breakend(breakpoint1, breakpoint2, datahub, record.id)
+
+    raise NotImplementedError()
 
 # import logging
 # import pyfaidx
