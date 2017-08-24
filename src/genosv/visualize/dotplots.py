@@ -353,11 +353,11 @@ def cluster_loci(loci):
 
     return clustered
 
-def find_homologous_regions(seq, genomesource, window_size=500, offset=500):
+def find_homologous_regions(seq, genomesource, segments, window_size=500, offset=500):
     homologous_regions = []
 
     for i in range(0, max(1, len(seq)-window_size), offset):
-        print("---", i, "---")
+        # print("---", i, "---")
 
         curseq = seq[i:i+window_size]
 
@@ -365,17 +365,19 @@ def find_homologous_regions(seq, genomesource, window_size=500, offset=500):
 
         if len(cur_alns) > 0: print("BEST:", cur_alns[0])
 
-        for cur_aln in cur_alns[1:]:
+        for i, cur_aln in enumerate(cur_alns):
             chrom = genomesource.bwa.ChrIDToName(cur_aln.reference_id)
             locus = intervals.Locus(chrom, cur_aln.reference_start, cur_aln.reference_end, "+")
-            homologous_regions.append(locus)
 
-            print(cur_aln)
-        print()
+            if not intervals.overlaps(locus, segments):
+                homologous_regions.append(locus)
+
+            # print(cur_aln)
+        # print()
 
     clustered = cluster_loci(homologous_regions)
-    for l in clustered:
-        print(l)
+    # for l in clustered:
+        # print(l)
 
     return clustered
 
@@ -384,12 +386,19 @@ def do_homology_search(datahub):
 
     variant = datahub.variant
 
+    segment_loci = []
+    for part in variant.chrom_parts("ref"):
+        for segment in part.segments:
+            cur_chrom = misc.match_chrom_format(segment.chrom, datahub.genome.keys())
+            segment = intervals.Locus(cur_chrom, max(0, segment.start-100), segment.end+100, "+")
+            segment_loci.append(segment)
+
     for part in variant.chrom_parts("ref"):
         breakpoints = numpy.cumsum([len(segment) for segment in part.segments])[:-1]
 
         seq = part.get_seq()
         homologous_regions = find_homologous_regions(
-            seq, datahub.genome)
+            seq, datahub.genome, segment_loci)
         plot_homologous_regions(seq, homologous_regions, datahub.genome, part.id, breakpoints)
 
     # also look for any reasonably-sized segments that are unique to the alt allele
@@ -405,7 +414,7 @@ def do_homology_search(datahub):
                 segment.chrom, segment.start, segment.end, segment.strand)
 
             homologous_regions = find_homologous_regions(
-                seq, datahub.genome)
+                seq, datahub.genome, [])
             plot_homologous_regions(seq, homologous_regions, datahub.genome, 
                 label="segment_{}".format(segment))
 
