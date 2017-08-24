@@ -12,6 +12,8 @@ python:
     - "3.5"
     - "3.6"
     
-install: pip install tox-travis
+install:
+    - if [[ $TRAVIS_PYTHON_VERSION == 3.3 ]]; then pip install numpy==1.11; fi
+    - pip install tox-travis
 
 script: tox
