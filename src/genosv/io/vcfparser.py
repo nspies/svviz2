@@ -50,12 +50,12 @@ class VCFParser(object):
                 else:
                     assert not variant.id in breakends
                     breakends[variant.id] = variant
+            elif only_nucs(variant.ref) and only_nucs(variant.alts[0]):# and sv_type == "INS":
+                yield get_sequence_defined(variant, self.datahub)
             elif sv_type == "DEL":
                 yield get_deletion(variant, self.datahub)
             elif sv_type == "INS" and ("INS:ME" in variant.alts[0] or "MEINFO" in variant.info):
                 raise NotImplementedError("not yet implemented: mobile element insertions")
-            elif only_nucs(variant.ref) and only_nucs(variant.alts[0]) and sv_type == "INS":
-                yield get_sequence_defined(variant, self.datahub)
             elif sv_type == "TRA":
                 yield get_translocation(variant, self.datahub)
             else:
