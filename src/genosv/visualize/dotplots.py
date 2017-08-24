@@ -27,11 +27,11 @@ def can_generate_dotplots():
     if ro is None:
         logger.warn("rpy2 could not be imported; dotplots will not be generated")
         return False
-    try:
-        subprocess.check_call("yass --version", stderr=subprocess.PIPE, shell=True)
-    except subprocess.CalledProcessError:
-        logger.warn("yass helper program could not be run; dotplots will not be generated")
-        return False
+    # try:
+    #     subprocess.check_call("yass --version", stderr=subprocess.PIPE, shell=True)
+    # except subprocess.CalledProcessError:
+    #     logger.warn("yass helper program could not be run; dotplots will not be generated")
+    #     return False
 
     return True
 
@@ -428,12 +428,12 @@ def plot_homologous_regions(seq, homologous_regions, genomesource, label, breakp
     for region in cluster_loci(homologous_regions):
         if len(region) < len(seq) * 0.9:
             len_diff = int((len(seq)-len(region))/2)
-            region._start -= len_diff
+            region._start = max(0, region.start-len_diff)
             region._end += len_diff
-
+            
         other_seq = genomesource.get_seq(
             region.chrom, region.start, region.end, "+").upper()  
-
+        
         d = dotplots.simple_dotplot(seq, other_seq)
         dotplots.draw_simple_dotplot(d, xlim=(0, len(seq)), ylim=(region.start, region.end),
             labelx=label, labely=region.chrom, breakpointsx=breakpoints)
