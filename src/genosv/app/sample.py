@@ -150,6 +150,14 @@ class Sample(object):
                 print("ERROR!"*30)
                 raise
 
+    def has_realignments(self):
+        for allele in ["alt", "ref", "amb"]:
+            try:
+                self.outbam(allele, "r")
+            except OSError:
+                return False
+        return True
+        
     def outbam(self, allele, mode):
         if mode == "w":
             if not allele in self.outbams:

@@ -90,6 +90,12 @@ class DataHub(object):
 
         self.aligner_type = "bwa"
 
+        self.should_genotype = True
+
+        self.should_render = True
+        self.should_generate_reports = True
+        self.should_generate_dotplots = True
+
 
     def genotype_cur_variant(self):
         for sample_name, sample in self.samples.items():
@@ -176,8 +182,6 @@ class DataHub(object):
             # sample.outbam_paths["ref"] = os.path.join(
             #     self.args.outdir, "{}.{}.ref.bam".format(variant.short_name(), sample_name))
 
-
-
         if self.args.savereads:
             for allele in ["alt", "ref"]:
                 outpath = os.path.join(self.args.outdir, "{}.genome.{}.fa".format(variant.short_name(), allele))
@@ -185,6 +189,12 @@ class DataHub(object):
                     for name, seq in self.variant.seqs(allele).items():
                         genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
 
+        self.should_genotype = False
+        for sample in self.samples.values():
+            if not sample.has_realignments():
+                self.should_genotype = True
+        if not self.should_genotype:
+            logger.info("Found realignments for all samples for event {}; skipping realignment".format(self.variant))
 
 
     def set_args(self, args):
@@ -231,6 +241,20 @@ class DataHub(object):
             sample = Sample(name, bam_path, self, extra_args)
             self.samples[name] = sample
 
+        if self.args.render_only:
+            self.should_generate_dotplots = False
+            self.should_generate_reports = False
+
+        if self.args.dotplots_only:
+            self.should_render = False
+            self.should_generate_reports = False
+            
+        if self.args.report_only:
+            self.should_render = False
+            self.should_generate_dotplots = False
+
+        # if not (self.should_render and self.should_generate_dotplots and self.should_generate_reports):
+            # self.should_genotype = False
         # if self.args.annotations:
         #     for annoPath in self.args.annotations:
         #         name = nameFromBedPath(annoPath)
