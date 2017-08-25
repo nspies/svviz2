@@ -54,6 +54,6 @@ setup(name="genosv",
       ext_modules = extensions,
       setup_requires=["cython"],
       entry_points={"console_scripts": ["genosv = genosv.app.main:main"]},
-      install_requires=["pysam>=0.10", "numpy", "pyfaidx", "tqdm", "pandas", "numpy", "seqlib>=0.0.6", "genomeview"], 
+      install_requires=["pysam>=0.10", "numpy>=1.11.1", "pyfaidx", "tqdm", "pandas", "numpy", "seqlib>=0.0.6", "genomeview"], 
       python_requires=">=3.3"
      )
