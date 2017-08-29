@@ -1,8 +1,11 @@
+import numpy
 import pytest
 from unittest import mock
 
 from genosv.app.datahub import DataHub
 from genosv.io.vcfparser import VCFParser
+
+from genosv.app.variants import Deletion, SequenceDefinedVariant
 
 VCFHEADER = """
 ##fileformat=VCFv4.2
@@ -30,7 +33,7 @@ VCFEXAMPLE_SEQUENCE_DEFINED = """
 1	30100011	EVENT1	G	GAACCGCAGAAACCCACACCTCTTTCTCGGGACCGAACGGGCCCC	100	.	SVTYPE=INS	GT	0/1
 2	220010533	EVENT2	AATCCCAGCTA	AAAGAAAAGAATTATCCACCCAG	100	.	SVTYPE=INS;END=220010543	GT	0/1
 17	45895177	EVENT3	G	GGGTACCACACCCGTGT	100	.	SVTYPE=INS	GT	0/1
-2	31506461	EVENT4	TCTGATTACCTGCTCCACCTGACTCATT	A	.	.	SVLEN=27;SVTYPE=DEL;END=31506489	GT	0/1
+2	31506461	EVENT4	TCTGATTACCTGCTCCACCTGACTCATT	A	.	.	SVLEN=27;SVTYPE=DEL;END=31506488	GT	0/1
 """.lstrip()
 
 VCFEXAMPLE_DEL = """
@@ -143,6 +146,120 @@ def test_sequence_deletion_vcf(deletion_vcf):
 
     assert len(variants) == 1
     for v in variants:
-        chrom, start = v.breakpoints[0].chrom, v.breakpoints[0].start
-        end = v.breakpoints[1].start
-        assert (chrom, start, end) == ("2", 321681, 321886)
+        chrom, start, end = v.breakpoints[0].chrom, v.breakpoints[0].start, v.breakpoints[1].start
+        if v.name == "EVENT5":
+            assert (chrom, start, end) == ("2", 321681, 321886)
+
+
+
+def random_sequence(n):
+    return "".join(list(numpy.random.choice(list("ACGT"),n)))
+
+
+########################### DELETIONS ###########################
+
+def get_deletion_variant(ref, pos, length):
+    def validate(variant):
+        assert isinstance(variant, Deletion)
+        assert variant.deletionLength() == length
+        assert variant.segments("ref")[1].start == pos, variant.segments("ref")
+
+    result = ["2",
+              pos, # output is one-based, position before deletion starts
+              "deletion_1",
+              ref[pos-1:pos+length],
+              ref[pos-1],
+              ".",
+              "PASS",
+              "SVTYPE=DEL",
+              ".",
+              "."]
+
+    return "\t".join(map(str, result))+"\n", validate
+
+@pytest.fixture(params=[
+    ("chr1", 300, 25),
+    ("chr1", 600, 120),
+    ("chr2", 3000, 300),
+])
+def deletion(genome_source, request):
+    chrom, pos, length = request.param
+    refseq = genome_source.names_to_contigs[chrom]
+    deletion, validate = get_deletion_variant(refseq, pos, pos+length)
+
+    return deletion, validate
+
+def test_deletions(tmpdir, genome_source, deletion):
+    do_variant_test(tmpdir, genome_source, deletion)
+
+
+########################### INSERTIONS ###########################
+
+def get_insertion_variant(ref, pos, length):
+    def validate(variant):
+        assert isinstance(variant, SequenceDefinedVariant)
+        assert len(variant.segments("alt")[1]) == length+1
+
+    import random
+    r = random.Random()
+    r.seed(551)
+    insertion_sequence =  "".join(r.choice("ACGT") for i in range(length))
+
+    result = ["2",
+              pos, # output is one-based, position before deletion starts
+              "deletion_1",
+              ref[pos],
+              ref[pos]+insertion_sequence,
+              ".",
+              "PASS",
+              "SVTYPE=INS",
+              ".",
+              "."]
+
+    return "\t".join(map(str, result))+"\n", validate
+
+@pytest.fixture(params=[
+    ("chr1", 300, 25),
+    ("chr1", 600, 120),
+    ("chr2", 3000, 300),
+])
+def insertion(genome_source, request):
+    chrom, pos, length = request.param
+    refseq = genome_source.names_to_contigs[chrom]
+    insertion, validate = get_insertion_variant(refseq, pos, pos+length)
+
+    return insertion, validate
+
+def test_inserts(tmpdir, genome_source, insertion):
+    do_variant_test(tmpdir, genome_source, insertion)    
+
+
+
+def do_variant_test(tmpdir, genome_source, variant):
+    variant_line, variant_validator = variant
+    vcf_path = str(tmpdir.join("svs.vcf"))
+
+    with open(vcf_path, "w") as vcf:
+        vcf.write(VCFHEADER)
+        vcf.write(variant_line)
+
+    print(variant)
+    datahub = DataHub()
+    datahub.args = mock.Mock(variants=vcf_path)
+    datahub.genome = genome_source
+    datahub.align_distance = 1000
+
+    print("")
+    parser = VCFParser(datahub)
+    for v in parser.get_variants():
+        variant_validator(v)
+
+
+# def test_sim():
+#     ref = random_sequence(100)
+#     for s, read in simulate_long_reads(ref, 5, 20):
+#         print(ref)
+#         print(" "*(s-1), read)
+
+# if __name__ == '__main__':
+#     test_sim()
