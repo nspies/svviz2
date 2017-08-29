@@ -357,7 +357,7 @@ class Deletion(StructuralVariant):
         return [deletionRegion]
 
     def deletionLength(self):
-        length = self.breakpoints[1].end - self.breakpoints[0].start
+        length = self.breakpoints[1].end - self.breakpoints[0].start + 1
         return length
 
     def segments(self, allele):
