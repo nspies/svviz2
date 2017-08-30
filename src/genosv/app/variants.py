@@ -363,17 +363,27 @@ class Deletion(StructuralVariant):
     def segments(self, allele):
         chrom = self.breakpoints[0].chrom
 
-        if allele in ["ref", "amb"]:
-            return [Segment(chrom, self.breakpoints[0].start-self.align_distance, self.breakpoints[0].start-1, "+", 0),
-                    Segment(chrom, self.breakpoints[0].start, self.breakpoints[1].end, "+", 1),
-                    Segment(chrom, self.breakpoints[1].end+1, self.breakpoints[1].end+self.align_distance, "+", 2)]
-        elif allele == "alt":
-            return [Segment(chrom, self.breakpoints[0].start-self.align_distance, self.breakpoints[0].start-1, "+", 0),
-                    Segment(chrom, self.breakpoints[1].end+1, self.breakpoints[1].end+self.align_distance, "+", 2)]
+        deleted = Segment(chrom, self.breakpoints[0].start, self.breakpoints[1].end, "+", 1)
+        downstream = Segment(chrom, self.breakpoints[1].end+1, self.breakpoints[1].end+self.align_distance, "+", 2)
+
+        if self.breakpoints[0].start >= 1:
+            upstream = Segment(chrom, self.breakpoints[0].start-self.align_distance, self.breakpoints[0].start-1, "+", 0)
+            if allele in ["ref", "amb"]:
+                return [upstream, deleted, downstream]
+            elif allele == "alt":
+                return [upstream, downstream]
+                # return [Segment(chrom, self.breakpoints[0].start-self.align_distance, self.breakpoints[0].start-1, "+", 0),
+                        # Segment(chrom, self.breakpoints[1].end+1, self.breakpoints[1].end+self.align_distance, "+", 2)]
+        else:
+            if allele in ["ref", "amb"]:
+                return [deleted, downstream]
+            elif allele == "alt":
+                return [downstream]
 
     def __str__(self):
         return "{}::{}:{:,}-{:,}({})".format(self.__class__.__name__, self.breakpoints[0].chrom, self.breakpoints[0].start, 
             self.breakpoints[1].end, self.deletionLength())
+
 
 
 # class Inversion(StructuralVariant):

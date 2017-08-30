@@ -47,6 +47,45 @@ def simulate_read_pairs(sequence, n_pairs, length=150, isize=400, r=random.Rando
         reads.append((start, start+isize-1, pair))
     return reads
 
+# def get_error_type():
+#     r = numpy.random.rand()
+#     if r < 0.4:
+#         return "insertion"
+#     elif r < 0.8:
+#         return "deletion"
+#     else:
+#         return "mismatch"
+
+# def simulate_long_reads(seq, n, mean_length=10000, error_rate=0.0):
+#     reads = []
+
+#     for i in range(n):
+#         cur_length = min(numpy.random.poisson(mean_length), len(seq)-1)
+#         cur_start = numpy.random.randint(0, len(seq)-cur_length-1)
+
+#         cur_seq = list(seq[cur_start:(cur_start+cur_length)])
+
+#         errors = int(cur_length * error_rate)
+
+#         while errors > 0:
+#             error_type = get_error_type()
+#             position = numpy.random.randint(0, len(cur_seq))
+
+#             if error_type == "insertion":
+#                 ins_length = numpy.random.poisson(2.7)
+#                 cur_seq.insert(position, random_sequence(ins_length))
+#                 errors -= ins_length
+#             elif error_type == "deletion":
+#                 del_length = numpy.random.poisson(2.7)
+#                 cur_seq = cur_seq[:position] + cur_seq[position+del_length:]
+#                 errors -= del_length
+#             elif error_type == "mismatch":
+#                 cur_seq[position] = numpy.random.choice(list(set("ACGT")-set(cur_seq[position])))
+#                 errors -= 1
+
+#         reads.append((cur_start, "".join(cur_seq)))
+
+#     return reads
 
 
 def _seq1():

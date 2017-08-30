@@ -5,12 +5,9 @@ from setuptools.extension import Extension
 
 import sys
 
-numpy_version = "numpy"
 if sys.version_info < (3, 3):
     raise RuntimeError("Python version >= 3.3 required.")
-elif sys.version_info < (3, 4):
-    numpy_version = "numpy==1.11.1"
-    
+
 def get_version(string):
     """ Parse the version number variable __version__ from a script. """
     import re
@@ -57,7 +54,7 @@ setup(name="genosv",
       ext_modules = extensions,
       setup_requires=["cython"],
       entry_points={"console_scripts": ["genosv = genosv.app.main:main"]},
-      install_requires=["pysam>=0.10", numpy_version, "pyfaidx", "tqdm", "pandas", "numpy", 
+      install_requires=["pysam>=0.10", "numpy>=1.11.1", "pyfaidx", "tqdm", "pandas", "numpy", 
                         "seqlib>=0.0.6", "genomeview"], 
       python_requires=">=3.3"
      )

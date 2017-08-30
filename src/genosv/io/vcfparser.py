@@ -67,6 +67,7 @@ class VCFParser(object):
 
 def get_sequence_defined(variant, datahub):
     # print("::", variant.id, variant.start, variant.stop, len(variant.ref))
+    # variant.start: 0-based, inclusive; variant.stop: 0-based, exclusive
     assert variant.stop-variant.start == len(variant.ref), "{}:{}-{}({}), {}".format(variant.chrom, variant.start, variant.stop, variant.rlen, variant)
 
     if len(variant.alts[0])==1 and variant.ref[0]==variant.alts[0][0]:
