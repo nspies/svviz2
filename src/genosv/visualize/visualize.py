@@ -3,10 +3,12 @@ import numpy
 
 from genosv.io import export
 from genosv.app import genomesource
+from genosv.visualize import dotplots
 
 from genomeview import Document, ViewRow, GenomeView
 from genomeview.track import TrackLabel
 from genomeview.axis import Axis, get_ticks
+from genomeview.intervaltrack import IntervalTrack, Interval
 from genomeview.bamtrack import SingleEndBAMTrack, PairedEndBAMTrack
 
 logger = logging.getLogger(__name__)
@@ -83,6 +85,10 @@ def _visualize(datahub, context=None):
 
             axis = ChromSegmentAxis(part.id, part.segments)
             genome_view.add_track(axis)
+            trf_track = get_trf_track(datahub, allele, part)
+            if trf_track:
+                genome_view.add_track(trf_track)
+
             row.add_view(genome_view)
 
         if allele == "alt": track_label = "Alternate Allele"
@@ -94,7 +100,27 @@ def _visualize(datahub, context=None):
 
     export.export(doc, datahub, context)
 
+def get_trf_track(datahub, allele, part):
+    repeats = dotplots.detect_simple_repeats(part.get_seq())
+    if repeats is None:
+        return None
 
+    intervals = []
+
+    for i, (start, end, repeat) in enumerate(repeats):
+        # print("--", start, end, repeat)
+        label = label="({}){:.1f}".format(repeat, (end-start)/len(repeat))
+        if len(label) > 20:
+            label = "long_repeat_{}".format(i)
+        intervals.append(
+            Interval(i, part.id, start, end, "+", label))
+
+    track = IntervalTrack("repeats-{}".format(part.id), intervals)
+    track.color_fn = lambda x: "gray"
+
+    return track
+
+    
 #### TODO: this should move elsewhere!!
 
 def color_by_strand_with_mapq(interval):

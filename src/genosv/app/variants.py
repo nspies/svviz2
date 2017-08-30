@@ -372,8 +372,6 @@ class Deletion(StructuralVariant):
                 return [upstream, deleted, downstream]
             elif allele == "alt":
                 return [upstream, downstream]
-                # return [Segment(chrom, self.breakpoints[0].start-self.align_distance, self.breakpoints[0].start-1, "+", 0),
-                        # Segment(chrom, self.breakpoints[1].end+1, self.breakpoints[1].end+self.align_distance, "+", 2)]
         else:
             if allele in ["ref", "amb"]:
                 return [deleted, downstream]

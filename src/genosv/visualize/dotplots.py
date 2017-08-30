@@ -46,7 +46,7 @@ def detect_simple_repeats(seq):
         repeats = trf.run_trf({"a":seq})
         if repeats is not None:
             repeats = repeats.pop("a", [])
-            return [(s,e,len(r)) for (s,e,r) in repeats]
+            return [(s,e,r) for (s,e,r) in repeats]
     except:
         raise
 
