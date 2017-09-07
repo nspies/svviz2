@@ -18,7 +18,7 @@ def map_realign_pairs(batch, datahub, sample):
     import tqdm
     # for read_or_pair in batch:
     for read_or_pair in tqdm.tqdm(batch):
-        # if read_or_pair.name == "ST-E00130:359:HGV3HCCXX:1:1120:26098:65265":
+        #if read_or_pair.name == "D00360:64:HBAP3ADXX:1:2114:9685:53802":
         read_or_pair.realign(ref_genome_sources, alt_genome_sources)
 
     return batch

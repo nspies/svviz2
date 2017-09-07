@@ -45,19 +45,14 @@ class ReadStatistics(object):
 
 
     def score_read_pair(self, pair):
-        if not pair.concordant(self):
+        insert_size_prob = self.scoreInsertSize(pair.insert_size)
+
+        if not pair.concordant(self) or insert_size_prob == 0:
             pair.score = pair.aln1.score + pair.aln2.score + -10
             return
 
-        insert_size_prob = self.scoreInsertSize(pair.insert_size)
-
         with numpy.errstate(divide="ignore"):
             log10_pair_prob = numpy.log10(insert_size_prob) + pair.aln1.score + pair.aln2.score
-
-        # print("PAIR:", score1, score2, pair_prob, prob_to_phred(pair_prob, 10))
-        # print(pair_prob, prob_to_phred(pair_prob, 10))
-
-        # return log10_pair_prob
 
         pair.score = log10_pair_prob
 
