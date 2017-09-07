@@ -45,9 +45,13 @@ class ReadStatistics(object):
 
 
     def score_read_pair(self, pair):
+        if not pair.concordant(self):
+            pair.score = pair.aln1.score + pair.aln2.score + -10
+            return
+
         insert_size_prob = self.scoreInsertSize(pair.insert_size)
 
-        if not pair.concordant(self) or insert_size_prob == 0:
+        if insert_size_prob == 0:
             pair.score = pair.aln1.score + pair.aln2.score + -10
             return
 

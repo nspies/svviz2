@@ -42,26 +42,25 @@ dinucs = ["".join(x) for x in itertools.product(nucs, repeat=2) if len(set(x))!=
 trinucs = ["".join(x) for x in itertools.product(nucs, repeat=3) if len(set(x))!=1]
 
 def detect_simple_repeats(seq):
-    try:
-        repeats = trf.run_trf({"a":seq})
-        if repeats is not None:
-            repeats = repeats.pop("a", [])
-            return [(s,e,r) for (s,e,r) in repeats]
-    except:
-        raise
+    repeats = trf.run_trf({"a":seq})
+    if repeats is not None:
+        repeats = repeats.pop("a", [])
+        return [(s,e,r) for (s,e,r) in repeats]
 
-    patterns = {1: ["({}){{10,}}".format(nuc) for nuc in nucs],
-                2: ["({}){{5,}}".format(dinuc) for dinuc in dinucs],
-                3: ["({}){{3,}}".format(trinuc) for trinuc in trinucs]}
+    return None
+    
+    # patterns = {1: ["({}){{10,}}".format(nuc) for nuc in nucs],
+    #             2: ["({}){{5,}}".format(dinuc) for dinuc in dinucs],
+    #             3: ["({}){{3,}}".format(trinuc) for trinuc in trinucs]}
 
-    repeats = []
+    # repeats = []
 
-    for unit, pattern in patterns.items():
-        pattern = "|".join(pattern)
-        for match in re.finditer(pattern, seq):
-            repeats.append((match.start(), match.end(), unit))
+    # for unit, pattern in patterns.items():
+    #     pattern = "|".join(pattern)
+    #     for match in re.finditer(pattern, seq):
+    #         repeats.append((match.start(), match.end(), unit))
 
-    return repeats
+    # return repeats
 
 def plot_simple_repeats(s1, s2):
     repeats1 = detect_simple_repeats(s1)
