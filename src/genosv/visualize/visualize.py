@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 def get_bounds(datahub, allele, part):
-    start = len(part)
-    end = 0
+    start = len(part.segments[0])
+    end = sum(len(segment) for segment in part.segments[:-1])
 
     for sample in datahub.samples.values():
         for read in sample.outbam(allele, "r").fetch(part.id):
