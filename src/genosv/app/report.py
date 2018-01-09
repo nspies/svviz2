@@ -127,6 +127,8 @@ def _tally_support(bam):
     breakpoint_counts = collections.Counter()
     extensions = collections.defaultdict(list)
 
+    breakpoints = set()
+
     for read in bam:
         if not read.is_paired or read.is_read1:
             count += 1
@@ -135,6 +137,7 @@ def _tally_support(bam):
 
             cur_breakpoint_overlaps = json.loads(read.get_tag("Ov"))
             for breakpoint, info in cur_breakpoint_overlaps.items():
+                breakpoints.add(breakpoint)
                 overlap, overlaps_sequence, extension = info
                 breakpoint_overlaps[breakpoint].append(overlap)
                 breakpoint_counts[(breakpoint, overlaps_sequence)] += 1
@@ -143,17 +146,21 @@ def _tally_support(bam):
     results = [("count", count),
                ("weighted_count", weighted_count)]
 
+    breakpoint_ids = {}
+    for i, breakpoint in enumerate(sorted(breakpoints)):
+        breakpoint_ids[breakpoint] = i
+
     for breakpoint, overlaps in breakpoint_overlaps.items():
-        key = "overlap_{}".format(breakpoint)
+        key = "overlap_{}.{}".format(breakpoint_ids[breakpoint], breakpoint)
         results.append((key, numpy.mean(overlaps)))
 
     for breakpoint, cur_count in breakpoint_counts.items():
         breakpoint, overlaps_sequence = breakpoint
-        key = "count_{}_{}".format(breakpoint, "seq" if overlaps_sequence else "pair")
+        key = "count_{}.{}_{}".format(breakpoint_ids[breakpoint], breakpoint, "seq" if overlaps_sequence else "pair")
         results.append((key, cur_count))
 
     for breakpoint, cur_extensions in extensions.items():
-        key = "extension_{}".format(breakpoint)
+        key = "extension_{}.{}".format(breakpoint_ids[breakpoint], breakpoint)
         results.append((key, numpy.mean(cur_extensions)))
 
 
@@ -166,7 +173,6 @@ def iter_segments(datahub, allele):
     for part in parts:
         segments = part.segments
 
-        segment_overlaps = collections.defaultdict(list)
         cur_offset = 0
 
         for segment in segments:
@@ -176,8 +182,6 @@ def iter_segments(datahub, allele):
 
 
 def tally_nearby_polymorphisms(datahub):
-    cur_part = None
-
     distance = 100
     results = []
 
