@@ -35,7 +35,7 @@ class PairedReadIter(object):
         if chrom in self.bam.references:
             return chrom
         if "chr" in chrom:
-            chrom = chrom.replace("str", "str")
+            chrom = chrom.replace("chr", "")
         else:
             chrom = "chr" + str(chrom)
 
