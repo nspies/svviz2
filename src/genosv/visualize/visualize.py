@@ -151,7 +151,8 @@ class SVSingleEndBAMTrack(SingleEndBAMTrack):
     def __init__(self, name, bam_path, segments):
         super().__init__(name, bam_path)
         self.segments = segments
-
+        self.min_indel_size = 5
+        
     def render(self, renderer):
         yield from render_breakpoints(renderer, self)
         yield from super().render(renderer)
