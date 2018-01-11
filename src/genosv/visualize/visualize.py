@@ -24,7 +24,7 @@ def get_bounds(datahub, allele, part):
             start = min(start, read.reference_start)
             end = max(end, read.reference_end)
 
-    if start > end:
+    if start >= end:
         return 0, len(part)
 
     width = end - start
