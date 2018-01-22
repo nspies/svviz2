@@ -1,9 +1,9 @@
 import logging
 
-from genosv.io import pairedreaditer
-from genosv.remap import alignment
-from genosv.remap.readpair import ReadPair
-from genosv.utility import misc
+from svviz2.io import pairedreaditer
+from svviz2.remap import alignment
+from svviz2.remap.readpair import ReadPair
+from svviz2.utility import misc
 
 logger = logging.getLogger(__name__)
 

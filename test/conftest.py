@@ -4,11 +4,11 @@ import pysam
 import pytest
 import random
 
-from genosv.remap.readpair import ReadPair
-from genosv.remap.alignment import Alignment
-from genosv.app.genomesource import GenomeSource
-from genosv.utility.misc import reverse_comp
-from genosv.app.sample import ReadStatistics
+from svviz2.remap.readpair import ReadPair
+from svviz2.remap.alignment import Alignment
+from svviz2.app.genomesource import GenomeSource
+from svviz2.utility.misc import reverse_comp
+from svviz2.app.sample import ReadStatistics
 
 class _ReadStats(ReadStatistics):
     def __init__(self):

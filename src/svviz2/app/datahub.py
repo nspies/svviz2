@@ -4,16 +4,16 @@ import os
 import pysam
 import shutil
 
-from genosv.app import genomesource
-from genosv.app.sample import Sample
-from genosv.app import variants
-from genosv.io import getreads
-from genosv.io import vcfparser
-from genosv.io import saverealignments
-from genosv.remap import maprealign
-from genosv.remap import genotyping
-from genosv.utility import misc
-from genosv.utility import intervals
+from svviz2.app import genomesource
+from svviz2.app.sample import Sample
+from svviz2.app import variants
+from svviz2.io import getreads
+from svviz2.io import vcfparser
+from svviz2.io import saverealignments
+from svviz2.remap import maprealign
+from svviz2.remap import genotyping
+from svviz2.utility import misc
+from svviz2.utility import intervals
 
 
 logger = logging.getLogger(__name__)
@@ -138,7 +138,7 @@ class DataHub(object):
         return state
 
     def cleanup(self):
-        temp_dir = os.path.join(self.args.outdir, "genosv-temp")
+        temp_dir = os.path.join(self.args.outdir, "svviz2-temp")
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
@@ -170,7 +170,7 @@ class DataHub(object):
         if self.args.savereads or self.args.render_only:
             outdir = self.args.outdir
         else:
-            outdir = os.path.join(self.args.outdir, "genosv-temp")
+            outdir = os.path.join(self.args.outdir, "svviz2-temp")
             misc.ensure_dir(outdir)
 
         for sample_name, sample in self.samples.items():

@@ -4,9 +4,9 @@ import numpy
 import os
 import pandas
 
-from genosv.app.variants import non_negative
-from genosv.utility import statistics
-from genosv.remap import genotyping
+from svviz2.app.variants import non_negative
+from svviz2.utility import statistics
+from svviz2.remap import genotyping
 
 
 def report(datahub):

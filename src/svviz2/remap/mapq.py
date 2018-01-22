@@ -3,8 +3,8 @@ import logging
 import numpy
 # import time
 
-from genosv.remap.alignment import Alignment
-from genosv.utility.statistics import phred_to_prob, prob_to_phred
+from svviz2.remap.alignment import Alignment
+from svviz2.utility.statistics import phred_to_prob, prob_to_phred
 
 logger = logging.getLogger(__name__)
 

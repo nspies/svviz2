@@ -1,9 +1,9 @@
 import logging
 import numpy
 
-from genosv.io import export
-from genosv.app import genomesource
-from genosv.visualize import dotplots
+from svviz2.io import export
+from svviz2.app import genomesource
+from svviz2.visualize import dotplots
 
 from genomeview import Document, ViewRow, GenomeView
 from genomeview.track import TrackLabel
@@ -44,7 +44,7 @@ def get_bounds_zoomed(part, context_bases):
 
 
 
-# TODO: this is genosv.visualize.visualize.visualize -- awkward!
+# TODO: this is svviz2.visualize.visualize.visualize -- awkward!
 def visualize(datahub):#, temp_storage):
     if datahub.args.also_plot_context:
         logger.info("Now plotting zoomed-in")

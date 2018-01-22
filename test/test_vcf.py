@@ -2,10 +2,10 @@ import numpy
 import pytest
 from unittest import mock
 
-from genosv.app.datahub import DataHub
-from genosv.io.vcfparser import VCFParser
+from svviz2.app.datahub import DataHub
+from svviz2.io.vcfparser import VCFParser
 
-from genosv.app.variants import Deletion, SequenceDefinedVariant
+from svviz2.app.variants import Deletion, SequenceDefinedVariant
 
 VCFHEADER = """
 ##fileformat=VCFv4.2

@@ -3,9 +3,9 @@ import collections
 
 # from svviz.utilities import Locus, getListDefault
 # import genomesource
-from genosv.utility.misc import safe_file_name
-from genosv.utility.intervals import Locus
-from genosv.app import genomesource
+from svviz2.utility.misc import safe_file_name
+from svviz2.utility.intervals import Locus
+from svviz2.app import genomesource
 
 
 def non_negative(x):

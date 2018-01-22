@@ -3,8 +3,8 @@ import logging
 import numpy
 import random
 
-from genosv.utility.kde import gaussian_kde
-from genosv.remap import mapq
+from svviz2.utility.kde import gaussian_kde
+from svviz2.remap import mapq
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,4 @@
-from genosv.utility.bam import bam_sort_index
+from svviz2.utility.bam import bam_sort_index
 
 def save_realignments(aln_sets, sample, datahub):
     for aln_set in aln_sets:

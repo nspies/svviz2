@@ -35,17 +35,17 @@ def get_defines():
     return Defines()
 
 extensions = [
-    Extension("genosv.remap._mapq",
-              sources=["src/genosv/remap/_mapq.pyx"],
+    Extension("svviz2.remap._mapq",
+              sources=["src/svviz2/remap/_mapq.pyx"],
               include_dirs=get_includes(),
               define_macros=get_defines()
               )
     ]
 
 
-setup(name="genosv",
-      version=get_version(open('src/genosv/__init__.py').read()),
-      description="genosv",
+setup(name="svviz2",
+      version=get_version(open('src/svviz2/__init__.py').read()),
+      description="svviz2",
       author="Noah Spies",
       
       packages = find_packages("src"),
@@ -53,7 +53,7 @@ setup(name="genosv",
 
       ext_modules = extensions,
       setup_requires=["cython"],
-      entry_points={"console_scripts": ["genosv = genosv.app.main:main"]},
+      entry_points={"console_scripts": ["svviz2 = svviz2.app.main:main"]},
       install_requires=["pysam>=0.10", "numpy>=1.11.1", "pyfaidx", "tqdm", "pandas", "numpy", 
                         "seqlib>=0.0.6", "genomeview"], 
       python_requires=">=3.3"

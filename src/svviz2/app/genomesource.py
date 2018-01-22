@@ -4,13 +4,13 @@ import logging
 import pyfaidx
 import seqlib
 
-from genosv.utility import intervals, misc
-# from genosv.remap import mapq
-from genosv.remap import ssw_aligner
-from genosv.remap.alignment import Alignment
+from svviz2.utility import intervals, misc
+# from svviz2.remap import mapq
+from svviz2.remap import ssw_aligner
+from svviz2.remap.alignment import Alignment
 
 
-from genosv.remap import _mapq
+from svviz2.remap import _mapq
 
 logger = logging.getLogger(__name__)
 

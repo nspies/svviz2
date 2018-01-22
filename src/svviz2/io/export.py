@@ -4,7 +4,7 @@ import subprocess
 import sys
 import tempfile
 
-from genosv.utility import misc
+from svviz2.utility import misc
 
 
 def export(sv_document, datahub, context=None):
@@ -18,7 +18,7 @@ def export(sv_document, datahub, context=None):
     if file_format == "svg":
         outpath = os.path.join(datahub.args.outdir, file_name+".svg")
     else:
-        temp_outdir = os.path.join(datahub.args.outdir, "genosv-temp")
+        temp_outdir = os.path.join(datahub.args.outdir, "svviz2-temp")
         misc.ensure_dir(temp_outdir)
         outpath = os.path.join(temp_outdir, file_name+".svg")
 

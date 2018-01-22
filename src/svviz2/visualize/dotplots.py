@@ -7,9 +7,9 @@ import re
 import subprocess
 # import tempfile
 
-from genosv.utility import intervals
-from genosv.utility import misc
-from genosv.visualize import trf
+from svviz2.utility import intervals
+from svviz2.utility import misc
+from svviz2.visualize import trf
 logger = logging.getLogger(__name__)
 
 try:
@@ -422,7 +422,7 @@ def plot_homologous_regions(seq, homologous_regions, genomesource, label, breakp
     # from rpy2 import robjects as ro
 
     # ro.r.pdf("temp.pdf")
-    from genosv.visualize import dotplots
+    from svviz2.visualize import dotplots
 
     for region in cluster_loci(homologous_regions):
         if len(region) < len(seq) * 0.9:

@@ -1,9 +1,9 @@
 import numpy
 import pysam
 
-from genosv.utility import intervals
-from genosv.utility import misc
-from genosv.utility.statistics import prob_to_phred
+from svviz2.utility import intervals
+from svviz2.utility import misc
+from svviz2.utility.statistics import prob_to_phred
 
 
 ATTRIBS = ["query_name",

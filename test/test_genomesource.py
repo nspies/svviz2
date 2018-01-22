@@ -1,7 +1,7 @@
 import pysam
 import pytest
 
-from genosv.remap.alignment import Alignment
+from svviz2.remap.alignment import Alignment
 import conftest
 
 

@@ -1,7 +1,7 @@
 import numpy
 
 import json
-from genosv.utility import intervals, statistics
+from svviz2.utility import intervals, statistics
 
 
 

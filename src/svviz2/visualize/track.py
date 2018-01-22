@@ -3,8 +3,8 @@ import itertools
 import math
 import numpy
 import re
-from genosv.visualize.svg import SVG
-from genosv.visualize import dotplots
+from svviz2.visualize.svg import SVG
+from svviz2.visualize import dotplots
 # from svviz import utilities
 # from svviz import variants
 

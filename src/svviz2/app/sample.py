@@ -3,9 +3,9 @@ import numpy
 import pysam
 import sys
 
-from genosv.io.readstatistics import ReadStatistics
-from genosv.utility.bam import bam_sort_index
-from genosv.utility.misc import str_to_bool
+from svviz2.io.readstatistics import ReadStatistics
+from svviz2.utility.bam import bam_sort_index
+from svviz2.utility.misc import str_to_bool
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@ import logging
 import pysam
 import re
 
-from genosv.utility.intervals import Locus
-from genosv.app import variants
+from svviz2.utility.intervals import Locus
+from svviz2.app import variants
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@ import collections
 import logging
 
 
-# from genosv.remap import mapq
-from genosv.remap import alignment
+# from svviz2.remap import mapq
+from svviz2.remap import alignment
 
 logger = logging.getLogger(__name__)
 

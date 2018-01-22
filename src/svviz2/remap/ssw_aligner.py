@@ -1,7 +1,7 @@
 import collections
 import pysam
 
-from genosv.utility.misc import reverse_comp
+from svviz2.utility.misc import reverse_comp
 
 try:
     from ssw import ssw_wrap

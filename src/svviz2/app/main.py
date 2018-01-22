@@ -2,11 +2,11 @@ import logging
 import sys
 import time
 
-from genosv.app import commandline
-from genosv.app.datahub import DataHub
-from genosv.visualize import visualize
-from genosv.app import report
-from genosv.visualize import dotplots
+from svviz2.app import commandline
+from svviz2.app.datahub import DataHub
+from svviz2.visualize import visualize
+from svviz2.app import report
+from svviz2.visualize import dotplots
 
 FORMAT = '%(asctime)s - %(name)-25s - %(levelname)-5s - %(message)s'
 DATEFMT = "%Y-%m-%d %H:%M:%S"
