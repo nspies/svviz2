@@ -144,12 +144,17 @@ class DataHub(object):
 
     def get_variants(self):
         vcf = vcfparser.VCFParser(self)
-        count = 0
-        for variant in vcf.get_variants():
+
+        for count, variant in enumerate(vcf.get_variants()):
+            if self.args.first_variant is not None and count < self.args.first_variant:
+                continue
+            if self.args.last_variant is not None and count > self.args.first_variant:
+                continue
+
             logger.info("Working on {}".format(variant))
             self.set_cur_variant(variant)
             yield variant
-            count += 1
+
         if count == 0:
             logger.error("Found no variants in file -- is it formatted properly?")
 

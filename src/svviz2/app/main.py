@@ -34,12 +34,7 @@ def get_datahub():
 
 def run(datahub):
     """ this runs the app on the provided datahub """
-    for i, variant in enumerate(datahub.get_variants()):
-        if datahub.args.first_variant is not None and i < datahub.args.first_variant:
-            continue
-        if datahub.args.last_variant is not None and i > datahub.args.first_variant:
-            continue
-
+    for variant in datahub.get_variants():
         # if not datahub.args.render_only:
         if datahub.should_genotype:
             t0 = time.time()
