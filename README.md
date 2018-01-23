@@ -13,6 +13,7 @@ This is a near complete rewrite of [svviz1](https://github.com/svviz/svviz). New
 - substantially improved visualizations
   - "quick consensus" reduces background error rate in pacbio/nanopore and other long-read technologies
   - optionally uses tandem repeat finder (trf) to identify tandem repeats near candidate SV
+  - visualization engine has been refactored into a separate [genomeview](https://github.com/nspies/genomeview) module, facilitating future improvements
 - integrated dotplots
   - visualizes ref vs alt, allowing for visual identification of tandem repeats and other complex sequence
   - if bwa is being used for realignment, visualizes any second-best hit regions against candidate SV locus
