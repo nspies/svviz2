@@ -18,9 +18,11 @@ This is a near complete rewrite of [svviz1](https://github.com/svviz/svviz). New
   - if bwa is being used for realignment, visualizes any second-best hit regions against candidate SV locus
   - if long-reads are provided as input, picks several long reads to plot as dotplots against ref and alt
 
-svviz2 requires **python 3.3** or greater. A few more notable changes with respect to version 1.x:
+svviz2 requires **python 3.3** or greater. To perform tandem repeat detection, download [tandem repeats finder](http://tandem.bu.edu/trf/trf.download.html), rename the binary to "trf" and move it into your `PATH`. To visualize the dotplots, the [rpy2](https://rpy2.bitbucket.io) package must be installed. 
 
-- there is no multiprocessing support; you're probably best off parallelizing over events
+A few more notable changes with respect to version 1.x:
+
+- there is no multiprocessing support; you're probably best off parallelizing over events or samples
 - variants are input in VCF format; please create an issue if you find a well-defined variant that is not supported by the current version of svviz2
 
 
