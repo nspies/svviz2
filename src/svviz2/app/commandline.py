@@ -65,6 +65,14 @@ def parse_args(input_args):
         "More aggressively skip reads that are unlikely to overlap\n"
         "the breakpoints (default: false)")
     
+    optional_args.add_argument("--first-variant", type=int, help=
+        "Skip all variants before this variant; counting starts with first variant"
+        "in input VCF as 0 (default: 0)")
+
+    optional_args.add_argument("--last-variant", type=int, help=
+        "Skip all variants after this variant; counting starts with first variant"
+        "in input VCF as 0 (default: end of vcf)")
+
     optional_args.add_argument("--render-only", action="store_true", help="")
     optional_args.add_argument("--dotplots-only", action="store_true", help="")
     optional_args.add_argument("--report-only", action="store_true", help="")
