@@ -40,6 +40,8 @@ def get_bounds_zoomed(part, context_bases):
     start = len(part.segments[0]) - context_bases
     end = len(part) - (len(part.segments[-1])-context_bases)
 
+    start = max(0, start)
+    
     return start, end
 
 
