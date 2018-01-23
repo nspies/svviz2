@@ -5,7 +5,7 @@
 
 This is a near complete rewrite of [svviz1](https://github.com/svviz/svviz). New features:
 
-- uses bwa under the hood for realignments
+- uses [bwa mem](https://github.com/lh3/bwa) under the hood for realignments
   - substantial improvements in reliability and speed when realigning long reads
   - enables realignment against entire genome, identifying potential second-best hits
   - calculates a quantitative mapping quality score taking account of ref and alt hits genome-wide
