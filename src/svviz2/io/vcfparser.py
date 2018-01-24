@@ -58,6 +58,8 @@ class VCFParser(object):
                 raise NotImplementedError("not yet implemented: mobile element insertions")
             elif sv_type == "TRA":
                 yield get_translocation(variant, self.datahub)
+            elif sv_type == "INV":
+                yield get_inversion(variant, self.datahub)
             else:
                 logger.warn("SKIPPING VARIANT: {}".format(variant))
 
@@ -193,6 +195,9 @@ def get_translocation(record, datahub):
 
     raise NotImplementedError()
 
+def get_inversion(record, datahub):
+    return variants.Inversion(record.chrom, record.start, record.stop-1, datahub, record.id)
+    
 # import logging
 # import pyfaidx
 

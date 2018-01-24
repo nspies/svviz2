@@ -384,46 +384,48 @@ class Deletion(StructuralVariant):
 
 
 
-# class Inversion(StructuralVariant):
-#     def __init__(self, region, align_distance, fasta):
-#         breakpoints = [Locus(region.chrom, region.start, region.start, "+"), Locus(region.chrom, region.end, region.end, "+")]
-#         super(Inversion, self).__init__(breakpoints, align_distance, fasta)
+class Inversion(StructuralVariant):
+    def __init__(self, chrom, start, end, datahub, name):
+        breakpoints = [Locus(chrom, start, start, "+"), Locus(chrom, end, end, "+")]
+        super(Inversion, self).__init__(breakpoints, datahub, name)
 
-#         self.region = region
+        self.chrom = chrom
+        self.start = start
+        self.end = end
 
-#     def chrom(self):
-#         return self.region.chrom
+    def chrom(self):
+        return self.chrom
 
-#     def search_regions(self, searchDistance):
-#         chrom = self.chrom()
+    def search_regions(self, searchDistance):
+        chrom = self.chrom
 
-#         if len(self.region) < 2*searchDistance:
-#             # return a single region
-#             return [Locus(chrom, nonNegative(self.region.start-searchDistance), self.region.end+searchDistance, "+")]
-#         else:
-#             # return two regions, each around one of the ends of the inversion
-#             search_regions = []
-#             search_regions.append(Locus(chrom, nonNegative(self.region.start-searchDistance), 
-#                 self.region.start+searchDistance, "+"))
-#             search_regions.append(Locus(chrom, nonNegative(self.region.end-searchDistance), 
-#                 self.region.end+searchDistance, "+"))
-#             return search_regions
+        if (self.end-self.start+1) < 2*searchDistance:
+            # return a single region
+            return [Locus(chrom, non_negative(self.start-searchDistance), self.end+searchDistance, "+")]
+        else:
+            # return two regions, each around one of the ends of the inversion
+            search_regions = []
+            search_regions.append(Locus(chrom, non_negative(self.start-searchDistance), 
+                self.start+searchDistance, "+"))
+            search_regions.append(Locus(chrom, non_negative(self.end-searchDistance), 
+                self.end+searchDistance, "+"))
+            return search_regions
 
-#     def segments(self, allele):
-#         chrom = self.chrom()
+    def segments(self, allele):
+        chrom = self.chrom
 
-#         if allele in ["ref", "amb"]:
-#             return [Segment(chrom, self.region.start-self.align_distance, self.region.start-1, "+", 0),
-#                     Segment(chrom, self.region.start, self.region.end, "+", 1),
-#                     Segment(chrom, self.region.end+1, self.region.end+self.align_distance, "+", 2)]
-#         elif allele == "alt":
-#             return [Segment(chrom, self.region.start-self.align_distance, self.region.start-1, "+", 0),
-#                     Segment(chrom, self.region.start, self.region.end, "-", 1),
-#                     Segment(chrom, self.region.end+1, self.region.end+self.align_distance, "+", 2)]
+        if allele in ["ref", "amb"]:
+            return [Segment(chrom, self.start-self.align_distance, self.start-1, "+", 0),
+                    Segment(chrom, self.start, self.end, "+", 1),
+                    Segment(chrom, self.end+1, self.end+self.align_distance, "+", 2)]
+        elif allele == "alt":
+            return [Segment(chrom, self.start-self.align_distance, self.start-1, "+", 0),
+                    Segment(chrom, self.start, self.end, "-", 1),
+                    Segment(chrom, self.end+1, self.end+self.align_distance, "+", 2)]
 
                 
-#     def __str__(self):
-#         return "{}::{}:{:,}-{:,}".format(self.__class__.__name__, self.region.chrom, self.region.start, self.region.end)
+    def __str__(self):
+        return "{}::{}:{:,}-{:,}".format(self.__class__.__name__, self.chrom, self.start, self.end)
 
 
 # class Insertion(StructuralVariant):
