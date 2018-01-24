@@ -52,6 +52,10 @@ def parse_args(input_args):
         "Number of reads to analyze at once; larger batch-size values may run more quickly \n"
         "but will require more memory (default=10000)")
 
+    optional_args.add_argument("--downsample", type=int, help=
+        "Ensure the total number of reads per event per sample does not exceed this number "
+        "by downsampling (default: infinity)")
+
     optional_args.add_argument("--aligner", type=str, default="bwa", help=
         "The aligner to use for realigning reads; either ssw (smith-waterman) or \n"
         "bwa (default=bwa)")

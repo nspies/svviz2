@@ -81,7 +81,7 @@ def _visualize(datahub, context=None):
 
                 bam_track = class_(sample_name, bam_path, part.segments)
                 bam_track.color_fn = color_by_strand_with_mapq
-                bam_track.draw_read_labels = True
+                bam_track.draw_read_labels = False
 
                 genome_view.add_track(bam_track)
 
@@ -126,9 +126,9 @@ def get_trf_track(datahub, allele, part):
 #### TODO: this should move elsewhere!!
 
 def color_by_strand_with_mapq(interval):
-    color = numpy.array([128,0,128])
+    color = numpy.array([232,158,157])
     if interval.strand == "-":
-        color = numpy.array([255,0,0])
+        color = numpy.array([140,143,206])
 
     brightness = 0.2 + (interval.read.mapq/40.0*0.8)
 

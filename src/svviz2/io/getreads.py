@@ -1,4 +1,5 @@
 import logging
+import numpy
 
 from svviz2.io import pairedreaditer
 from svviz2.remap import alignment
@@ -8,6 +9,16 @@ from svviz2.utility import misc
 logger = logging.getLogger(__name__)
 
 def get_read_batch(sample, datahub):
+    if datahub.args.downsample:
+        datahub.args.batch_size = numpy.inf
+        batch = list(_get_read_batch(sample, datahub))[0]
+        if len(batch) > datahub.args.downsample:
+            batch = list(numpy.random.choice(batch, size=datahub.args.downsample, replace=False))
+            yield batch
+    else:
+        yield from _get_read_batch(sample, datahub)
+        
+def _get_read_batch(sample, datahub):
     if sample.single_ended:
         for batch in get_reads_unpaired(sample, datahub):
             yield batch
@@ -27,6 +38,10 @@ def get_reads_unpaired(sample, datahub):
         for read in sample.bam.fetch(chrom, start, end):
             # if read.query_name != "m150105_192231_42177R_c100761782550000001823161607221526_s1_p0/138972/39862_46995":
             #     continue
+
+            if read.is_supplementary or read.is_duplicate:
+                continue
+            
             if datahub.args.min_mapq and read.mapq < datahub.args.min_mapq:
                 continue
 
