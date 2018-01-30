@@ -303,7 +303,7 @@ class Breakend(StructuralVariant):
         segments = []
         for i, breakpoint in enumerate(self.breakpoints):
             segments.append(Segment(breakpoint.chrom, breakpoint.start-self.align_distance, 
-                                    breakpoint.start, "+", 0+i*2))
+                                    breakpoint.start-1, "+", 0+i*2))
             segments.append(Segment(breakpoint.chrom, breakpoint.start, 
                                     breakpoint.start+self.align_distance, "+", 1+i*2))
 
@@ -328,7 +328,7 @@ class Breakend(StructuralVariant):
             if l1.overlaps(l2) or l1.overlapsAntisense(l2):
                 raise Exception("Not yet implemented - breakend-breakpoints near one another")
 
-            name = "alt_{}/{}".format(b1.chrom, b2.chrom)
+            name = "alt_{}__{}".format(b1.chrom, b2.chrom)
             parts.append(ChromPart(name, [s1, s2], self.sources))
 
         return ChromPartsCollection(parts) 
@@ -399,17 +399,17 @@ class Inversion(StructuralVariant):
     def search_regions(self, searchDistance):
         chrom = self.chrom
 
-        if (self.end-self.start+1) < 2*searchDistance:
-            # return a single region
-            return [Locus(chrom, non_negative(self.start-searchDistance), self.end+searchDistance, "+")]
-        else:
-            # return two regions, each around one of the ends of the inversion
-            search_regions = []
-            search_regions.append(Locus(chrom, non_negative(self.start-searchDistance), 
-                self.start+searchDistance, "+"))
-            search_regions.append(Locus(chrom, non_negative(self.end-searchDistance), 
-                self.end+searchDistance, "+"))
-            return search_regions
+        #if (self.end-self.start+1) < 2*searchDistance:
+        # return a single region
+        return [Locus(chrom, non_negative(self.start-searchDistance), self.end+searchDistance, "+")]
+        # else:
+        #     # return two regions, each around one of the ends of the inversion
+        #     search_regions = []
+        #     search_regions.append(Locus(chrom, non_negative(self.start-searchDistance), 
+        #         self.start+searchDistance, "+"))
+        #     search_regions.append(Locus(chrom, non_negative(self.end-searchDistance), 
+        #         self.end+searchDistance, "+"))
+        #     return search_regions
 
     def segments(self, allele):
         chrom = self.chrom

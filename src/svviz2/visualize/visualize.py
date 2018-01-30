@@ -73,19 +73,19 @@ def _visualize(datahub, context=None):
             else:
                 start, end = get_bounds_zoomed(part, context)
 
-            genome_view = GenomeView(part.id, part.id, start, end, "+", source)
+            genome_view = GenomeView(part.id, start, end, "+", source, name=part.id)
 
             for sample_name, sample in datahub.samples.items():
                 bam_path = sample.outbam_paths[allele].replace(".bam", ".sorted.bam") ## XXX todo: refactor
                 class_ = SVSingleEndBAMTrack if sample.single_ended else SVPairedEndBAMTrack
 
-                bam_track = class_(sample_name, bam_path, part.segments)
+                bam_track = class_(bam_path, part.segments, name=sample_name)
                 bam_track.color_fn = color_by_strand_with_mapq
                 bam_track.draw_read_labels = False
 
                 genome_view.add_track(bam_track)
 
-            axis = ChromSegmentAxis(part.id, part.segments)
+            axis = ChromSegmentAxis(part.segments, part.id)
             genome_view.add_track(axis)
             trf_track = get_trf_track(datahub, allele, part)
             if trf_track:
@@ -150,10 +150,12 @@ def render_breakpoints(renderer, bam_track):
 
 
 class SVSingleEndBAMTrack(SingleEndBAMTrack):
-    def __init__(self, name, bam_path, segments):
-        super().__init__(name, bam_path)
+    def __init__(self, bam_path, segments, name=None):
+        super().__init__(bam_path, name=name)
         self.segments = segments
         self.min_indel_size = 5
+        self.min_insertion_label_size = 10
+        
         self.draw_read_labels = False
         
     def render(self, renderer):
@@ -165,8 +167,8 @@ class SVSingleEndBAMTrack(SingleEndBAMTrack):
         self.height = max(25, self.height)
 
 class SVPairedEndBAMTrack(PairedEndBAMTrack):
-    def __init__(self, name, bam_path, segments):
-        super().__init__(name, bam_path)
+    def __init__(self, bam_path, segments, name=None):
+        super().__init__(bam_path, name=name)
         self.segments = segments
         self.draw_read_labels = False
         
@@ -179,7 +181,7 @@ class SVPairedEndBAMTrack(PairedEndBAMTrack):
         self.height = max(25, self.height)
             
 class ChromSegmentAxis(Axis):
-    def __init__(self, name, chrom_segments):
+    def __init__(self, chrom_segments, name=None):
         super().__init__(name)
         self.chrom_segments = chrom_segments
         self.height
