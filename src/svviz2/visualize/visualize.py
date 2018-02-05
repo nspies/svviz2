@@ -117,7 +117,7 @@ def get_trf_track(datahub, allele, part):
         intervals.append(
             Interval(i, part.id, start, end, "+", label))
 
-    track = IntervalTrack("repeats-{}".format(part.id), intervals)
+    track = IntervalTrack(intervals, "repeats-{}".format(part.id))
     track.color_fn = lambda x: "gray"
 
     return track
