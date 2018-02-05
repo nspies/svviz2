@@ -35,7 +35,8 @@ def parse_args(input_args):
         "output directory for visualizations, summaries, etc (default: current working directory)")
 
     optional_args.add_argument("--format", type=visualization_file_format, default="pdf", help=
-        "format for output visualizations; must be one of pdf, png or svg (default: pdf)")
+        "format for output visualizations; must be one of pdf, png or svg (default: pdf,"
+        "or svg if no suitable converter is found)")
 
     optional_args.add_argument("--savereads", action="store_true", help=
         "output the read realignments against the appropriate alt or ref allele (default: false)")

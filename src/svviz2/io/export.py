@@ -10,6 +10,11 @@ from svviz2.utility import misc
 def export(sv_document, datahub, context=None):
     file_format = datahub.args.format
     converter = getExportConverter(file_format)
+    if converter is None and file_format != "svg":
+        message = "No converters found to '{}'; output visualizations will be in svg format".format(file_format)
+        message += "(To convert to pdf/png, install rsvg-convert, inkscape or webkitToPDF and place the binary in $PATH)"
+        logging.warn(message)
+        file_format = "svg"
 
     context_label = ".zoomed{}".format(context) if context else ""
 
@@ -59,10 +64,12 @@ def getExportConverter(exportFormat, requested_converter=None):
         sys.exit(1)
 
     if exportFormat == "png" and requested_converter is None:
-        return "librsvg"
+        if checkRSVGConvert():
+            return "librsvg"
 
     if requested_converter == "rsvg-convert":
-        return "librsvg"
+        if checkRSVGConvert():
+            return "librsvg"
 
     if requested_converter in [None, "webkittopdf"]:
         if checkWebkitToPDF():
