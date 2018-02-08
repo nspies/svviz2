@@ -33,6 +33,7 @@ class ReadStatistics(object):
             self.discordant_frac = results["discordant"]
 
             # self.insertSizes, self.orientations, self.readLengths, self.number_mismatches, self.discordant_frac = results
+
             if len(self.insertSizes) > 1:
                 logger.info("  insert size mean: {:.2f} std: {:.2f} min:{}({}) max:{}({})".format(
                     numpy.mean(self.insertSizes), numpy.std(self.insertSizes),
@@ -158,8 +159,11 @@ def chooseOrientation(orientations):
     if chosenOrientations[0] == "unpaired":
         chosenOrientations = "any"
     else:
+        if "unpaired" in chosenOrientations:
+            logging.warn("A large proportion of reads were found to be unpaired -- this may indicate some issue with the library analysis!")
+            
         d = {False: "+", True:"-"}
-        chosenOrientations = ["".join(d[x] for x in o) for o in chosenOrientations]
+        chosenOrientations = ["".join(d[x] for x in o) for o in chosenOrientations if o!= "unpaired"]
     return chosenOrientations
 
 def getSearchRegions(bam, minLength=0):

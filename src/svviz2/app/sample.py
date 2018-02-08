@@ -1,5 +1,6 @@
 import logging
 import numpy
+import os
 import pysam
 import sys
 
@@ -47,6 +48,8 @@ class Sample(object):
 
         self.outbams = {}
         self.outbam_paths = {}
+
+        logger.info("Calculating read statistics for {}".format(os.path.basename(bam_path)))
 
         import time
         t0 = time.time()
