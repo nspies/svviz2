@@ -22,9 +22,15 @@ def _get_bam_headers(variant, allele):
 
 def get_sequencer_from_bam_header(bam):
     sequencer = None
-    for rg in bam.header.get("RG", []):
+    try:
+        header = bam.header.get("RG", [])
+    except AttributeError: # pysam >= 0.14
+        header = bam.header.to_dict().get("RG", [])
+        
+    for rg in header:
         if "PL" in rg:
-            sequencer = rg["PL"].lower()
+            sequencer = rg["PL"].lower()        
+        
     return sequencer
 
 class Sample(object):
