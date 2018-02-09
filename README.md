@@ -52,8 +52,8 @@ optional arguments:
 Required arguments:
   bam                   sorted, indexed bam file containing reads of interest to plot; can be specified multiple
                         times to load multiple samples
-  --ref REF, -r REF     reference fasta file (a .faidx index file will be created if it doesn't exist so you need
-                        write permissions for this directory)
+  --ref REF, -r REF     reference fasta file (a .faidx index file will be created if it doesn't exist so you 
+                        need write permissions for this directory)
   --variants VARIANTS, -V VARIANTS
                         the variants to analyze, in vcf or bcf format (vcf files may be compressed with gzip)
 
