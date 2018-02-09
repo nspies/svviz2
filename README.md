@@ -44,7 +44,7 @@ Usage
 ```
 usage: svviz2 [options] [demo] --ref REF --variants VARIANTS BAM [BAM2 ...]
 
-svviz2 version 2.0a1
+svviz2 version 2.0a2
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -60,7 +60,8 @@ Required arguments:
 Optional arguments:
   --outdir OUTDIR, -o OUTDIR
                         output directory for visualizations, summaries, etc (default: current working directory)
-  --format FORMAT       format for output visualizations; must be one of pdf, png or svg (default: pdf)
+  --format FORMAT       format for output visualizations; must be one of pdf, png or svg (default: pdf,or svg if no 
+                        suitable converter is found)
   --savereads           output the read realignments against the appropriate alt or ref allele (default: false)
   --min-mapq MIN_MAPQ   only reads with mapq>=MIN_MAPQ will be analyzed; when analyzing paired-end data,
                         at least one read end must be near the breakpoints with this mapq (default:0)
@@ -70,6 +71,9 @@ Optional arguments:
   --batch-size BATCH_SIZE
                         Number of reads to analyze at once; larger batch-size values may run more quickly
                         but will require more memory (default=10000)
+  --downsample DOWNSAMPLE
+                        Ensure the total number of reads per event per sample does not exceed this number by 
+                        downsampling (default: infinity)
   --aligner ALIGNER     The aligner to use for realigning reads; either ssw (smith-waterman) or
                         bwa (default=bwa)
   --only-realign-locally
@@ -78,6 +82,12 @@ Optional arguments:
                         the full reference genome (default: False)
   --fast                More aggressively skip reads that are unlikely to overlap
                         the breakpoints (default: false)
+  --first-variant FIRST_VARIANT
+                        Skip all variants before this variant; counting starts with first variantin input VCF as 0 
+                        (default: 0)
+  --last-variant LAST_VARIANT
+                        Skip all variants after this variant; counting starts with first variantin input VCF as 0 
+                        (default: end of vcf)
   --render-only
   --dotplots-only
   --report-only
