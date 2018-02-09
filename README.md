@@ -35,6 +35,8 @@ A few more notable changes with respect to version 1.x
 - variants are input in VCF format; please create an issue if you find a well-defined variant that is not supported by the current version of svviz2
 - VCF files must more or less conform to the spec -- svviz2 uses pysam which uses htslib to load VCF files
 
+Note that svviz2 does not natively support parallelization. You are probably best off parallelizing over variants (or samples). If it appears that svviz2 is using more than 1 core during realignment, it may be because numpy can in some circumstances use multiple threads (see [here](https://stackoverflow.com/questions/30791550/limit-number-of-threads-in-numpy/31622299#31622299) to deactivate this behavior).
+
 
 Usage
 -----
