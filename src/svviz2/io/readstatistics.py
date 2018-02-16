@@ -9,7 +9,7 @@ from svviz2.remap import mapq
 logger = logging.getLogger(__name__)
 
 
-class ReadStatistics(object):
+class ReadStatistics:
     def __init__(self, bam):
         self.insertSizes = []
         self.readLengths = []

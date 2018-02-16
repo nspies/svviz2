@@ -1,5 +1,9 @@
+import codecs
+import json
 import logging
 import numpy
+import os
+import pickle
 import pysam
 import sys
 
@@ -42,6 +46,41 @@ class Sample(object):
         self.outbams = {}
         self.outbam_paths = {}
 
+        self._load(extra_args)
+
+    def _load(self, extra_args):
+        if not os.path.exists(self.bam_path):
+            raise FileNotFoundError("Could not find bam file {}".format(self.bam_path))
+
+        stats_file_path = self.bam_path + ".svviz_stats"
+        try:
+            with open(stats_file_path) as inf:
+                data = json.load(inf)
+
+            self.single_ended = data["single_ended"]
+            self.sequencer = data["sequencer"]
+
+            # this is a little hairy -- ideally we'd json serialize
+            # the ReadStatistics object rather than pickle it
+            self.read_statistics = pickle.loads(
+                codecs.decode(data["read_statistics"].encode(), "base64"))
+            logger.info("Loaded pre-computed read statistics for {}".format(self.name))
+
+        except:
+            self._load_from_bam(extra_args)
+            read_stats_data = codecs.encode(
+                pickle.dumps(self.read_statistics), "base64").decode()
+
+            result = {
+                "single_ended": self.single_ended,
+                "sequencer": self.sequencer,
+                "read_statistics": read_stats_data
+            }
+
+            with open(stats_file_path, "w") as outf:
+                json.dump(result, outf)
+
+    def _load_from_bam(self, extra_args):
         import time
         t0 = time.time()
         self.read_statistics = ReadStatistics(self.bam)
