@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def name_from_bam_path(bampath):
-    return os.path.basename(bampath).replace(".bam", "").replace(".sorted", "").replace(".sort", "").replace(".", "_").replace("+", "_")
+    return os.path.basename(bampath).replace(".bam", "").replace(".cram", "").replace(".sorted", "").replace(".sort", "").replace(".", "_").replace("+", "_")
 # def name_from_bed_path(bampath):
 #     return os.path.basename(bampath).replace(".bed", "").replace(".sorted", "").replace(".sort", "").replace(".", "_").replace("+", "_").replace(".gz", "")
 
@@ -148,7 +148,7 @@ class DataHub(object):
         for count, variant in enumerate(vcf.get_variants()):
             if self.args.first_variant is not None and count < self.args.first_variant:
                 continue
-            if self.args.last_variant is not None and count > self.args.first_variant:
+            if self.args.last_variant is not None and count > self.args.last_variant:
                 continue
 
             logger.info("Working on {}".format(variant))
