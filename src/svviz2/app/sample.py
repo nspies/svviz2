@@ -87,7 +87,8 @@ class Sample(object):
                 json.dump(result, outf)
 
     def _load_from_bam(self, extra_args):
-        logger.info("Calculating read statistics for {}".format(os.path.basename(bam_path)))
+        logger.info("Calculating read statistics for {}".format(
+            os.path.basename(self.bam_path)))
 
         import time
         t0 = time.time()
