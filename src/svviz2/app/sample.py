@@ -3,10 +3,7 @@ import json
 import logging
 import numpy
 import os
-<<<<<<< HEAD
 import pickle
-=======
->>>>>>> 48da1dec43cf72bcdc278d02ead93547b7a77ceb
 import pysam
 import sys
 
