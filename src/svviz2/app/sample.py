@@ -3,7 +3,10 @@ import json
 import logging
 import numpy
 import os
+<<<<<<< HEAD
 import pickle
+=======
+>>>>>>> 48da1dec43cf72bcdc278d02ead93547b7a77ceb
 import pysam
 import sys
 
@@ -26,9 +29,15 @@ def _get_bam_headers(variant, allele):
 
 def get_sequencer_from_bam_header(bam):
     sequencer = None
-    for rg in bam.header.get("RG", []):
+    try:
+        header = bam.header.get("RG", [])
+    except AttributeError: # pysam >= 0.14
+        header = bam.header.to_dict().get("RG", [])
+        
+    for rg in header:
         if "PL" in rg:
-            sequencer = rg["PL"].lower()
+            sequencer = rg["PL"].lower()        
+        
     return sequencer
 
 class Sample(object):
@@ -81,6 +90,8 @@ class Sample(object):
                 json.dump(result, outf)
 
     def _load_from_bam(self, extra_args):
+        logger.info("Calculating read statistics for {}".format(os.path.basename(bam_path)))
+
         import time
         t0 = time.time()
         self.read_statistics = ReadStatistics(self.bam)
