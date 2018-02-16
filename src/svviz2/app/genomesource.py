@@ -213,7 +213,10 @@ class FastaGenomeSource(GenomeSource):
             logger.info("Loading bwa index from file {}...".format(self.path))
             
             self._bwa = seqlib.BWAWrapper()
-            self._bwa.loadIndex(self.path)
+            result = self._bwa.loadIndex(self.path)
+
+            if not result:
+                raise IOError("Failed to load bwa index from file {}".format(self.path))
             
             logger.info("Loading bwa index done.")
 
