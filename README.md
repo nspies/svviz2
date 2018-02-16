@@ -35,6 +35,8 @@ A few more notable changes with respect to version 1.x
 - variants are input in VCF format; please create an issue if you find a well-defined variant that is not supported by the current version of svviz2
 - VCF files must more or less conform to the spec -- svviz2 uses pysam which uses htslib to load VCF files
 
+Note that svviz2 does not natively support parallelization. You are probably best off parallelizing over variants (or samples). If it appears that svviz2 is using more than 1 core during realignment, it may be because numpy can in some circumstances use multiple threads (see [here](https://stackoverflow.com/questions/30791550/limit-number-of-threads-in-numpy/31622299#31622299) to deactivate this behavior).
+
 
 Usage
 -----
@@ -42,23 +44,25 @@ Usage
 ```
 usage: svviz2 [options] [demo] --ref REF --variants VARIANTS BAM [BAM2 ...]
 
-svviz2 version 2.0a1
+svviz2 version 2.0a2
 
 optional arguments:
   -h, --help            show this help message and exit
 
 Required arguments:
-  bam                   sorted, indexed bam file containing reads of interest to plot; can be specified multiple
-                        times to load multiple samples
-  --ref REF, -r REF     reference fasta file (a .faidx index file will be created if it doesn't exist so you need
-                        write permissions for this directory)
+  bam                   sorted, indexed bam file containing reads of interest to plot; can be specified 
+                        multiple times to load multiple samples
+  --ref REF, -r REF     reference fasta file (a .faidx index file will be created if it doesn't exist so you 
+                        need write permissions for this directory)
   --variants VARIANTS, -V VARIANTS
                         the variants to analyze, in vcf or bcf format (vcf files may be compressed with gzip)
 
 Optional arguments:
   --outdir OUTDIR, -o OUTDIR
-                        output directory for visualizations, summaries, etc (default: current working directory)
-  --format FORMAT       format for output visualizations; must be one of pdf, png or svg (default: pdf)
+                        output directory for visualizations, summaries, etc (default: current working 
+                        directory)
+  --format FORMAT       format for output visualizations; must be one of pdf, png or svg (default: pdf,or svg 
+                        if no suitable converter is found)
   --savereads           output the read realignments against the appropriate alt or ref allele (default: false)
   --min-mapq MIN_MAPQ   only reads with mapq>=MIN_MAPQ will be analyzed; when analyzing paired-end data,
                         at least one read end must be near the breakpoints with this mapq (default:0)
@@ -68,6 +72,9 @@ Optional arguments:
   --batch-size BATCH_SIZE
                         Number of reads to analyze at once; larger batch-size values may run more quickly
                         but will require more memory (default=10000)
+  --downsample DOWNSAMPLE
+                        Ensure the total number of reads per event per sample does not exceed this number by 
+                        downsampling (default: infinity)
   --aligner ALIGNER     The aligner to use for realigning reads; either ssw (smith-waterman) or
                         bwa (default=bwa)
   --only-realign-locally
@@ -76,6 +83,12 @@ Optional arguments:
                         the full reference genome (default: False)
   --fast                More aggressively skip reads that are unlikely to overlap
                         the breakpoints (default: false)
+  --first-variant FIRST_VARIANT
+                        Skip all variants before this variant; counting starts with first variantin input VCF 
+                        as 0 (default: 0)
+  --last-variant LAST_VARIANT
+                        Skip all variants after this variant; counting starts with first variantin input VCF 
+                        as 0 (default: end of vcf)
   --render-only
   --dotplots-only
   --report-only
