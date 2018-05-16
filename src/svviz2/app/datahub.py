@@ -146,6 +146,8 @@ class DataHub(object):
     def get_variants(self):
         vcf = vcfparser.VCFParser(self)
 
+        count = 0
+        
         for count, variant in enumerate(vcf.get_variants()):
             if self.args.first_variant is not None and count < self.args.first_variant:
                 continue
