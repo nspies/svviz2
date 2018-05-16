@@ -18,6 +18,7 @@ def report(datahub):
 
     result_df = pandas.DataFrame(results, columns=["sample", "allele", "key", "value"])
 
+    result_df["event"] = datahub.variant.name
     #print(result_df)
 
     report_filename = "{}.report.tsv".format(datahub.variant.short_name())

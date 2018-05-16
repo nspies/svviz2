@@ -126,7 +126,7 @@ class Sample(object):
         if "single_ended" in extra_args:
             self.single_ended = str_to_bool(extra_args["single_ended"])
 
-        print("ALIGNMENT PARAMS:::", self.sequencer)
+        logger.info("Using realignment presets for {}".format(self.sequencer))
 
 
     @property
