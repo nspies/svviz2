@@ -232,19 +232,18 @@ def sampleInsertSizes(bam, maxreads=50000, skip=0, minmapq=40, reference=None):
                 print(count, orientations)
                 # bail out early if it looks like it's single-ended
                 break
-
+            if read.is_secondary or read.is_supplementary:
+                continue
 
             if not read.is_paired:
                 orientations["unpaired"] += 1
-                readLengths.append(len(read.seq))
+                readLengths.append(len(read.query_sequence))
                 tally_nm(read)
                 continue
                 
             if not read.is_read1:
                 continue
             if read.is_unmapped or read.mate_is_unmapped:
-                continue
-            if read.is_secondary or read.is_supplementary:
                 continue
             if not read.is_proper_pair:
                 discordant += 1
