@@ -7,6 +7,9 @@ from svviz2.app import variants
 
 logger = logging.getLogger(__name__)
 
+class VCFParserError(Exception):
+    pass
+
 def only_nucs(seq):
     return set(list(seq)) <= set(list("ACGT"))
 
@@ -70,7 +73,11 @@ class VCFParser(object):
 def get_sequence_defined(variant, datahub):
     # print("::", variant.id, variant.start, variant.stop, len(variant.ref))
     # variant.start: 0-based, inclusive; variant.stop: 0-based, exclusive
-    assert variant.stop-variant.start == len(variant.ref), "{}:{}-{}({}), {}".format(variant.chrom, variant.start, variant.stop, variant.rlen, variant)
+    if variant.stop-variant.start != len(variant.ref):
+        error = "VCF format error: coordinates ({}:{}-{}) do not match the variant length ({}). Please check the VCF variant" \
+                "spec; in particular, END coordinates are inclusive. Full variant: {}"
+        raise VCFParserError(error.format(variant.chrom, variant.start, variant.stop, variant.rlen, variant))
+
 
     if len(variant.alts[0])==1 and variant.ref[0]==variant.alts[0][0]:
         # we need to add 1 to the start position to take into account the fact that the

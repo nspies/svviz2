@@ -99,6 +99,7 @@ class DataHub(object):
 
     def genotype_cur_variant(self):
         for sample_name, sample in self.samples.items():
+            logger.info("Analyzing sample {}".format(sample_name))
             ref_count = 0
             alt_count = 0
 

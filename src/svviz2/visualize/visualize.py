@@ -225,7 +225,7 @@ class ChromSegmentAxis(Axis):
             count = 0
             while x < (width-arrow_size) or count == 0:
                 yield from renderer.arrow(left+x+arrow_size, y, direction,
-                    color=segment.color(), scale=arrow_size/10)
+                    color=segment.color(), scale=arrow_size/12)
                 x += arrow_size+arrow_spacing
                 count += 1
 
