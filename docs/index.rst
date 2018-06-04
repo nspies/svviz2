@@ -1,8 +1,8 @@
 :tocdepth: 2
 
-=================================================================================================================
-svviz2 - automated high-throughput evaluation and visualization of read support for candidate structural variants
-=================================================================================================================
+================================================================
+svviz2 - to evaluate and visualize candidate structural variants
+================================================================
 
 
 .. toctree::
@@ -18,3 +18,27 @@ svviz2 - automated high-throughput evaluation and visualization of read support 
    faqs
    changelog
    license
+
+
+
+svviz visualizes high-throughput sequencing data that supports a structural variant. svviz is free and open source, available at `<https://github.com/nspies/svviz2>`_. Please submit issues, questions or feature requests using the `github issue tracker <https://github.com/nspies/svviz2/issues>`_.
+
+
+Quick-start
+-----------
+
+svviz2 requires python 3.3 or later. To install the latest version of svviz from github, run:
+
+``pip3 install -U git+git://github.com/nspies/svviz2.git``
+
+Detailed instructions, including how to ensure that all prerequisites are installed, are available on the :ref:`installation` page.
+
+
+Citation
+--------
+
+svviz has been `published in Bioinformatics <http://dx.doi.org/10.1093/bioinformatics/btv478>`_. If you found svviz useful for your research, please cite svviz as follows:
+
+Spies N, Zook JM, Salit M, Sidow A. 2015. svviz: a read viewer for validating structural variants. Bioinformatics doi:bioinformatics/btv478.
+
+svviz was developed by `Noah Spies <http://stanford.edu/~nspies/>`_, a member of the `Sidow lab <http://mendel.stanford.edu/SidowLab/index.html>`_ at Stanford and part of the `Joint Initiative for Metrology in Biology (JIMB) <http://jimb.stanford.edu/>`_. Funding was provided by the `National Institute of Standards and Technology (NIST) <http://www.nist.gov>`_.
