@@ -3,16 +3,24 @@ import logging
 # import numpy
 import pyfaidx
 import seqlib
+import sys
+import traceback
 
 from svviz2.utility import intervals, misc
 # from svviz2.remap import mapq
 from svviz2.remap import ssw_aligner
 from svviz2.remap.alignment import Alignment
 
-
-from svviz2.remap import _mapq
-
 logger = logging.getLogger(__name__)
+
+try:
+    from svviz2.remap import _mapq
+except:
+    logger.error(traceback.format_exc())
+    logger.error("ERROR: Failed to import mapq module; this is almost certainly due to "
+                 "a version mismatch between the installed versions of svviz2 and pysam;"
+                 "try reinstalling svviz2")
+    sys.exit()
 
 
 

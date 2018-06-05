@@ -12,7 +12,7 @@ def visualization_file_format(original_string):
 
 def parse_args(input_args):
     parser = argparse.ArgumentParser(description="svviz2 version {}".format(svviz2.__version__),
-        usage="%(prog)s [options] [demo] --ref REF --variants VARIANTS BAM [BAM2 ...]",
+        usage="%(prog)s [options] --ref REF --variants VARIANTS BAM [BAM2 ...]",
         formatter_class=argparse.RawTextHelpFormatter)
 
     required_args = parser.add_argument_group("Required arguments")
@@ -35,7 +35,7 @@ def parse_args(input_args):
         "output directory for visualizations, summaries, etc (default: current working directory)")
 
     optional_args.add_argument("--format", type=visualization_file_format, default="pdf", help=
-        "format for output visualizations; must be one of pdf, png or svg (default: pdf,"
+        "format for output visualizations; must be one of pdf, png or svg (default: pdf,\n"
         "or svg if no suitable converter is found)")
 
     optional_args.add_argument("--savereads", action="store_true", help=
@@ -54,7 +54,7 @@ def parse_args(input_args):
         "but will require more memory (default=10000)")
 
     optional_args.add_argument("--downsample", type=int, help=
-        "Ensure the total number of reads per event per sample does not exceed this number "
+        "Ensure the total number of reads per event per sample does not exceed this number\n"
         "by downsampling (default: infinity)")
 
     optional_args.add_argument("--aligner", type=str, default="bwa", help=
@@ -71,11 +71,11 @@ def parse_args(input_args):
         "the breakpoints (default: false)")
     
     optional_args.add_argument("--first-variant", type=int, help=
-        "Skip all variants before this variant; counting starts with first variant"
+        "Skip all variants before this variant; counting starts with first variant\n"
         "in input VCF as 0 (default: 0)")
 
     optional_args.add_argument("--last-variant", type=int, help=
-        "Skip all variants after this variant; counting starts with first variant"
+        "Skip all variants after this variant; counting starts with first variant\n"
         "in input VCF as 0 (default: end of vcf)")
 
     optional_args.add_argument("--render-only", action="store_true", help="")
