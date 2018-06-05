@@ -11,17 +11,20 @@ svviz2 - to evaluate and visualize candidate structural variants
    self
    intro
    install
-   visualizations
-   commandline
-   summaryoutput
-   batchmode
-   faqs
+   report
+   details
    changelog
    license
 
 
 
-svviz visualizes high-throughput sequencing data that supports a structural variant. svviz is free and open source, available at `<https://github.com/nspies/svviz2>`_. Please submit issues, questions or feature requests using the `github issue tracker <https://github.com/nspies/svviz2/issues>`_.
+svviz assesses evidence for a structural variant found in high-throughput sequencing data. svviz is free and open source, available at `<https://github.com/nspies/svviz2>`_. Please submit issues, questions or feature requests using the `github issue tracker <https://github.com/nspies/svviz2/issues>`_.
+
+Some typical use cases:
+
+- visually assessing whether tricky candidate SVs are likely to be true events
+- large-scale evaluation of SVs; for example, taking candidate events found using Illumina and assessing evidence in PacBio or Nanopore data
+- genotyping events
 
 
 Quick start
@@ -37,7 +40,7 @@ svviz2 takes as input a reference genome (bwa indexed), a list of variants in VC
 
 ``svviz2 [options] --ref REF --variants VARIANTS.vcf BAM [BAM2 ...]``
 
-Several files will be created for each event, including a pdf (or svg) visualizing the read evidence from each sample, a report with information about the strength of evidence (eg number of reads supporting variant or reference allele), and optionally dotplots used to assess repetitive structures near structural variants.
+Several files will be created for each event, including a pdf (or svg) visualizing the read evidence from each sample, a machine-readable report with information about the strength of evidence (eg number of reads supporting variant or reference allele), and optionally dotplots used to assess repetitive structures near structural variants.
 
 Citation
 --------

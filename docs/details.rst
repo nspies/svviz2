@@ -10,6 +10,17 @@ First, an alignment score is calculated according to the methods described in Zh
 
 The alignment scores are then used to calculate a mapq, which is equal to the probability of a given alignment divided by the sum of the probabilities of all alignments. A read may align to one or more locations in the reference region (ie close to the breakpoints), the alt region, or elsewhere in the genome. All of these mappings are considered when calculating mapq.
 
+.. _weighted_mapq:
+
+**A note about mapqs**
+
+In our experience, the mapq values are poorly calibrated -- that is, the actual values are not really proportional to the true probabilities. For example, a mapq of 40 doesn't really mean that a read is 99.99% likely to have derived from the given genomic locus. There are many possible reasons for this: the simple mapq model doesn't accurately model novel non-reference sequence; the scores for indels aren't normalized correctly to the mismatch scores; the base sequencing probabilities are incorrect; etc. In any case, we have found empirically that a "weighted mapq" score typically captures these additional uncertainties better than the raw mapq.
+
+The weighted mapq is calculated as a proportion: :math:`Q/40`, where :math:`Q` is the (Phred-scaled) mapq value, and 40 is the maximum mapq value.
+
+
+.. _genotypes:
+
 Genotype likelihood and quality scores
 --------------------------------------
 
@@ -44,4 +55,3 @@ GL and GQ values are reported as triplets: (homozygous-reference, heterozygous, 
 **An important note**
 
 Genotype likelihoods and qualities assume the correctness of the event being analyzed. Prior to using the GQ/GL values, it should be determined whether an event is true based on other factors such as the visual features, the amount of read overlap for the breakpoints, the context around the event, such as the number of nearby single nucleotide polymorphisms (SNPs) and insertions/deletions (indels), etc.
-

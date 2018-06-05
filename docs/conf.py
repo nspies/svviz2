@@ -30,6 +30,7 @@ import os
 # ones.
 extensions = [
     'sphinx.ext.todo',
+    'sphinx.ext.mathjax'
     # 'sphinxcontrib.fulltoc'
 ]
 
