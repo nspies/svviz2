@@ -31,8 +31,12 @@ class VCFParser(object):
         breakends = {}
         for variant in self.vcf:
             if not "SVTYPE" in variant.info:
-                print("variant does not appear to be a structural variant, skipping:{}".format(variant))
-                continue
+                if only_nucs(variant.ref) and only_nucs(variant.alts[0]):# and sv_type == "INS":
+                    yield get_sequence_defined(variant, self.datahub)
+                    continue
+                else:
+                    print("variant does not appear to be a structural variant, skipping:{}".format(variant))
+                    continue
 
             sv_type = variant.info["SVTYPE"].upper()
             if sv_type == "BND":
