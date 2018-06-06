@@ -1,3 +1,5 @@
+.. _report:
+
 Reports - quantitative assessment of SVs
 ----------------------------------------
 
@@ -14,7 +16,7 @@ A partial description of the different statistics generated follows:
     The simple count of reads supporting the given allele.
 
 ``weighted_count``
-    The weighted count, where each read contributes mapq/40.0 to the sum (see :ref:`weighted mapq <weighted_mapq>`). For example, a read supporting the alt allele with mapq 30 would contribute 3/4=0.75 to the weighted count.
+    The weighted count, where each read contributes mapq/40.0 to the sum (see :ref:`weighted mapq <weighted_mapq>`). For example, a read supporting the alt allele with mapq 30 would contribute 30/40=0.75 to the weighted count.
 
 ``GL_count``
     The simple :ref:`genotype likelihood <genotypes>`.
