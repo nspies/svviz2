@@ -12,7 +12,6 @@ svviz2 - to evaluate and visualize candidate structural variants
    :hidden:
 
    self
-   .. intro
    install
    visualization
    report
