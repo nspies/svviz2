@@ -14,7 +14,7 @@ svviz2 - to evaluate and visualize candidate structural variants
    self
    install
    visualization
-   report
+   Automated analysis <report>
    details
    changelog
    license
