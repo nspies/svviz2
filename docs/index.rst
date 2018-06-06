@@ -13,7 +13,7 @@ svviz2 - to evaluate and visualize candidate structural variants
 
    Overview <self>
    install
-   visualization
+   Visualization <visualization>
    Automated analysis <report>
    details
    changelog
