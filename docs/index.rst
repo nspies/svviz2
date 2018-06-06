@@ -39,7 +39,7 @@ Detailed instructions, including how to ensure that all prerequisites are instal
 
 svviz2 takes as input a reference genome (bwa indexed), a list of variants in VCF format, and assesses read evidence for each variant for one or more samples provided in bam format:
 
-``svviz2 [options] --ref REF --variants VARIANTS.vcf BAM [BAM2 ...]``
+``svviz2 [options] --ref <REF> --variants <VARIANTS.vcf> <BAM> [<BAM2> ...]``
 
 Several files will be created for each event, including a pdf (or svg) visualizing the read evidence from each sample, a machine-readable report with information about the strength of evidence (eg number of reads supporting variant or reference allele), and optionally dotplots used to assess repetitive structures near structural variants.
 
