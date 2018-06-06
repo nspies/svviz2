@@ -39,7 +39,7 @@ def get_reads_unpaired(sample, datahub):
             # if read.query_name != "m150105_192231_42177R_c100761782550000001823161607221526_s1_p0/138972/39862_46995":
             #     continue
 
-            if read.is_supplementary or read.is_duplicate:
+            if read.is_supplementary or read.is_duplicate or read.is_secondary:
                 continue
             
             if datahub.args.min_mapq and read.mapq < datahub.args.min_mapq:
