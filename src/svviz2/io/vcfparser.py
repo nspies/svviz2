@@ -30,6 +30,9 @@ class VCFParser(object):
     def get_variants(self):
         breakends = {}
         for variant in self.vcf:
+            if not variant.id:
+                raise VCFParserError("Variant ID must be specified in the VCF")
+                
             if not "SVTYPE" in variant.info:
                 if only_nucs(variant.ref) and only_nucs(variant.alts[0]):# and sv_type == "INS":
                     yield get_sequence_defined(variant, self.datahub)
