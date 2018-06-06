@@ -106,6 +106,8 @@ class PairedReadIter(object):
             pair_chrom, pair_pos = read.next_reference_name, read.next_reference_start
 
             for other_read in self.bam.fetch(pair_chrom, pair_pos, pair_pos+1, multiple_iterators=True):
+                if other_read.is_secondary or other_read.is_supplementary:
+                    continue
                 if other_read.query_name in self.unpaired_reads:
                     if self.is_mate(other_read):
                         pair = [other_read, self.unpaired_reads.pop(other_read.query_name)]
