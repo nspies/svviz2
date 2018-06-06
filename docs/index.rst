@@ -11,7 +11,7 @@ svviz2 - to evaluate and visualize candidate structural variants
    :maxdepth: 1
    :hidden:
 
-   self
+   Overview <self>
    install
    visualization
    Automated analysis <report>
