@@ -54,7 +54,7 @@ class PairedReadIter(object):
                     continue
                 if read.is_supplementary:
                     continue
-                if read.is_secondary and BAM_CHARD_CLIP in list(zip(*read.cigartuples))[0]:
+                if read.is_secondary:# and BAM_CHARD_CLIP in list(zip(*read.cigartuples))[0]:
                     continue # this happens eg if bwa is used with the -M option
                 if read.is_duplicate:
                     continue
