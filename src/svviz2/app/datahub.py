@@ -2,7 +2,8 @@ import collections
 import logging
 import os
 import pysam
-import shutil
+#import shutil
+import tempfile
 
 from svviz2.app import genomesource
 from svviz2.app.sample import Sample
@@ -96,6 +97,7 @@ class DataHub(object):
         self.should_generate_reports = True
         self.should_generate_dotplots = True
 
+        self.temp_dir = None
 
     def genotype_cur_variant(self):
         for sample_name, sample in self.samples.items():
@@ -139,9 +141,10 @@ class DataHub(object):
         return state
 
     def cleanup(self):
-        temp_dir = os.path.join(self.args.outdir, "svviz2-temp")
-        if os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
+        #temp_dir = os.path.join(self.args.outdir, "svviz2-temp")
+        #if os.path.exists(temp_dir):
+        #    shutil.rmtree(temp_dir)
+        self.temp_dir.cleanup()
 
     def get_variants(self):
         vcf = vcfparser.VCFParser(self)
@@ -154,7 +157,7 @@ class DataHub(object):
             if self.args.last_variant is not None and count > self.args.last_variant:
                 continue
 
-            logger.info("Working on {}".format(variant))
+            logger.info("Working on variant {}: {}".format(count, variant))
             self.set_cur_variant(variant)
             yield variant
 
@@ -178,7 +181,8 @@ class DataHub(object):
         if self.args.savereads or self.args.render_only:
             outdir = self.args.outdir
         else:
-            outdir = os.path.join(self.args.outdir, "svviz2-temp")
+            #outdir = os.path.join(self.args.outdir, "svviz2-temp")
+            outdir = self.temp_dir.name
             misc.ensure_dir(outdir)
 
         for sample_name, sample in self.samples.items():
@@ -198,6 +202,7 @@ class DataHub(object):
                         genome_file.write(">{}\n{}\n".format(name.replace("/", "__"), seq))
 
         self.should_genotype = False
+        logger.info("Looking for existing realignments; will try to open a few bam files that may not yet exist...")
         for sample in self.samples.values():
             if not sample.has_realignments():
                 self.should_genotype = True
@@ -217,7 +222,8 @@ class DataHub(object):
         if self.args.outdir is None:
             self.args.outdir = os.getcwd()
         misc.ensure_dir(self.args.outdir)
-
+        self.temp_dir = tempfile.TemporaryDirectory(prefix="svviz2-temp", dir=self.args.outdir)
+        
         for bam_description in self.args.bam:
             fields = bam_description.split(",")
 
@@ -249,6 +255,13 @@ class DataHub(object):
             sample = Sample(name, bam_path, self, extra_args)
             self.samples[name] = sample
 
+        if self.args.no_render:
+            self.should_render = False
+        if self.args.no_dotplots:
+            self.should_generate_dotplots = False
+        if self.args.no_report:
+            self.should_generate_reports = False
+            
         if self.args.render_only:
             self.should_generate_dotplots = False
             self.should_generate_reports = False
