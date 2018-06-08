@@ -19,7 +19,7 @@ Additional, optional software:
 Installing into a virtual environment
 -------------------------------------
 
-The preferred method is to use `pip` to install svviz2 into a virtualenv:
+The preferred method is to use ``pip`` to install svviz2 into a virtualenv:
 
 ::
 

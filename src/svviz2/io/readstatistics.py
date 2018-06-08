@@ -24,6 +24,8 @@ class ReadStatistics:
         self._min_reasonable_insert_size = None
         self._max_reasonable_insert_size = None
 
+        if bam is None: return
+
         try:
             results = sampleInsertSizes(bam)
             self.insertSizes = results["insertSizes"]

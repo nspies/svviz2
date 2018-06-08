@@ -107,7 +107,7 @@ def genome_source():
                        "chr2":_seq2()})
     return gs
 
-@pytest.fixture(params=[10, 50, 150, 500])
+@pytest.fixture(params=[10, 50, 150, 500, 1000, 2000])
 def genome_source_deletion(request):
     seq2 = _seq2()
     seq2 = seq2[:4000] + seq2[4000+request.param:]

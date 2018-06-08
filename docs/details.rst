@@ -24,6 +24,8 @@ The weighted mapq is calculated as a proportion: :math:`Q/40`, where :math:`Q` i
 Genotype likelihood and quality scores
 --------------------------------------
 
+**Use at your own risk!** Please note that while svviz2 makes some calculations for genotypes, the underlying is extremely simplified and doesn't take into the complexities and heterogeneity of structural variants. In particular, the expected ratios of reads supporting the ref and alt alleles are rarely 1:1 (as expected by the model), given that the alleles can differ substantially in size. For example, paired-end reads that span a 10bp deletion (ie read1 ends upstream of event and read2 starts downstream) are difficult to assign with any probability to one allele or another. However, as the deletion begins to approach the average insert size it becomes much more obvious which allele the read derives from.
+
 Genotype likelihoods are calculated using a simple Bayesian formula similar to that employed by the GATK (Genome Analysis Toolkit, from the Broad Institute) for genotyping single nucleotide variants. Briefly, a prior is defined as:
 
 .. math::
