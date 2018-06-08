@@ -79,8 +79,11 @@ def parse_args(input_args):
         "in input VCF as 0 (default: end of vcf)")
 
     optional_args.add_argument("--render-only", action="store_true", help="")
+    optional_args.add_argument("--no-render", action="store_true", help="")
     optional_args.add_argument("--dotplots-only", action="store_true", help="")
+    optional_args.add_argument("--no-dotplots", action="store_true", help="")
     optional_args.add_argument("--report-only", action="store_true", help="")
+    optional_args.add_argument("--no-report", action="store_true", help="")
 
     optional_args.add_argument("--only-plot-context", type=int, help=
         "Only show this many nucleotides before the first breakpoint, and the last breakpoint\n"

@@ -87,7 +87,7 @@ def generate_dotplots(datahub):
     for allele in ["alt", "ref"]:
         for part in variant.chrom_parts(allele):
             parts[part.id] = part
-            print(part.id, part.get_seq())
+            #print(part.id, part.get_seq())
 
     import time
     outpath = os.path.join(
@@ -145,7 +145,7 @@ def draw_chrompart_dotplot(part1, part2):
 
 
 def get_breakpoints(part):
-    print("::", part.id, [len(segment) for segment in part.segments])
+    #print("::", part.id, [len(segment) for segment in part.segments])
     return numpy.cumsum([len(segment) for segment in part.segments])[:-1]
 
 def get_interesting_region(part):
@@ -362,7 +362,7 @@ def find_homologous_regions(seq, genomesource, segments, window_size=500, offset
 
         cur_alns = genomesource.bwa.align(curseq, secondary_hit_cutoff=0.5)
 
-        if len(cur_alns) > 0: print("BEST:", cur_alns[0])
+        #if len(cur_alns) > 0: print("BEST:", cur_alns[0])
 
         for i, cur_aln in enumerate(cur_alns):
             chrom = genomesource.bwa.ChrIDToName(cur_aln.reference_id)

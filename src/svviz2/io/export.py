@@ -1,3 +1,4 @@
+import functools
 import logging
 import os
 import subprocess
@@ -6,14 +7,15 @@ import tempfile
 
 from svviz2.utility import misc
 
+logger = logging.getLogger(__name__)
+
 
 def export(sv_document, datahub, context=None):
     file_format = datahub.args.format
     converter = getExportConverter(file_format)
     if converter is None and file_format != "svg":
-        message = "No converters found to '{}'; output visualizations will be in svg format".format(file_format)
-        message += "(To convert to pdf/png, install rsvg-convert, inkscape or webkitToPDF and place the binary in $PATH)"
-        logging.warn(message)
+        logging.warn("No converters found to '{}'; output visualizations will be in svg format".format(file_format))
+        logging.warn("(To convert to pdf/png, install rsvg-convert, inkscape or webkitToPDF and place the binary in $PATH)")
         file_format = "svg"
 
     context_label = ".zoomed{}".format(context) if context else ""
@@ -23,8 +25,9 @@ def export(sv_document, datahub, context=None):
     if file_format == "svg":
         outpath = os.path.join(datahub.args.outdir, file_name+".svg")
     else:
-        temp_outdir = os.path.join(datahub.args.outdir, "svviz2-temp")
-        misc.ensure_dir(temp_outdir)
+        #temp_outdir = os.path.join(datahub.args.outdir, "svviz2-temp")
+        #misc.ensure_dir(temp_outdir)
+        temp_outdir = datahub.temp_dir.name
         outpath = os.path.join(temp_outdir, file_name+".svg")
 
         final_outpath = os.path.join(datahub.args.outdir, file_name+"." + file_format)
@@ -57,7 +60,10 @@ def getExportFormat(args):
     exportFormat = exportFormat.lower()
     return exportFormat
 
+@functools.lru_cache()
 def getExportConverter(exportFormat, requested_converter=None):
+    logging.info("Trying to locate auxiliary svg converter...")
+    
     if requested_converter == "webkittopdf" and exportFormat=="png":
         logging.error("webkitToPDF does not support export to PNG; use librsvg or inkscape instead, or "
             "export to PDF")
