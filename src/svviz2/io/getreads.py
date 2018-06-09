@@ -19,12 +19,16 @@ def get_read_batch(sample, datahub):
         yield from _get_read_batch(sample, datahub)
         
 def _get_read_batch(sample, datahub):
+    read_filter = lambda x: x
+    if sample.read_filter:
+        read_filter = sample.read_filter
+        
     if sample.single_ended:
         for batch in get_reads_unpaired(sample, datahub):
-            yield batch
+            yield read_filter(batch)
     else:
         for batch in get_read_pairs(sample, datahub):
-            yield [ReadPair(read1, read2, sample.read_statistics) for (read1, read2) in batch]
+            yield read_filter([ReadPair(read1, read2, sample.read_statistics) for (read1, read2) in batch])
 
 
 def get_reads_unpaired(sample, datahub):

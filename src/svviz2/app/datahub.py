@@ -10,6 +10,7 @@ from svviz2.app.sample import Sample
 from svviz2.app import variants
 from svviz2.io import getreads
 from svviz2.io import vcfparser
+from svviz2.io import read_filters
 from svviz2.io import saverealignments
 from svviz2.remap import maprealign
 from svviz2.remap import genotyping
@@ -211,7 +212,7 @@ class DataHub(object):
 
 
     def set_args(self, args):
-        EXTRA_ARG_TYPES = ["single_ended", "sequencer"]
+        EXTRA_ARG_TYPES = ["single_ended", "sequencer", "split_hap"]
         self.args = args
 
         self.aligner_type = args.aligner
@@ -252,8 +253,20 @@ class DataHub(object):
                     raise Exception(message.format(key, ",".join(EXTRA_ARG_TYPES)))
                 extra_args[key] = value
 
-            sample = Sample(name, bam_path, self, extra_args)
-            self.samples[name] = sample
+            split_hap = False
+            if "split_hap" in extra_args:
+                split_hap = misc.str_to_bool(extra_args["split_hap"])
+            if split_hap:
+                for hap in [1,2,None]:
+                    hap_name = "{}_hap{}".format(name, hap)
+                    if hap is None:
+                        hap_name = "{}_hap-unknown".format(name)
+                    sample = Sample(hap_name, bam_path, self, extra_args)
+                    sample.read_filter = read_filters.get_haplotype_filter(hap)
+                    self.samples[hap_name] = sample
+            else:
+                sample = Sample(name, bam_path, self, extra_args)
+                self.samples[name] = sample
 
         if self.args.no_render:
             self.should_render = False

@@ -52,6 +52,8 @@ class Sample(object):
         self.outbams = {}
         self.outbam_paths = {}
 
+        self.read_filter = None
+        
         self._load(extra_args)
 
     def _load(self, extra_args):
