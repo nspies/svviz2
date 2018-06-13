@@ -11,6 +11,7 @@ class VCFParserError(Exception):
     pass
 
 def only_nucs(seq):
+    seq = seq.upper()
     return set(list(seq)) <= set(list("ACGT"))
 
 def fix_vcf_header(vcf):
