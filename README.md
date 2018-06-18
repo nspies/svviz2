@@ -37,6 +37,10 @@ A few more notable changes with respect to version 1.x
 
 Note that svviz2 does not natively support parallelization. You are probably best off parallelizing over variants (or samples). One simple way to do this is using the `--first-variant` and `--last-variant options`. If it appears that svviz2 is using more than 1 core during realignment, it may be because numpy can in some circumstances use multiple threads (see [here](https://stackoverflow.com/questions/30791550/limit-number-of-threads-in-numpy/31622299#31622299) to deactivate this behavior).
 
+Documentation
+-------------
+
+More in-depth documentation is available at [https://svviz2.readthedocs.io](https://svviz2.readthedocs.io).
 
 Usage
 -----
