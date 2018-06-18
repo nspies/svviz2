@@ -43,7 +43,6 @@ Usage
 
 ```
 ssw library not found
-rpy2 could not be imported; dotplots will not be generated
 usage: svviz2 [options] --ref REF --variants VARIANTS BAM [BAM2 ...]
 
 svviz2 version 2.0a3
@@ -91,8 +90,11 @@ Optional arguments:
                         Skip all variants after this variant; counting starts with first variant
                         in input VCF as 0 (default: end of vcf)
   --render-only
+  --no-render
   --dotplots-only
+  --no-dotplots
   --report-only
+  --no-report
   --only-plot-context ONLY_PLOT_CONTEXT
                         Only show this many nucleotides before the first breakpoint, and the last breakpoint
                         in each region (default: show as much context as needed to show all reads fully)
