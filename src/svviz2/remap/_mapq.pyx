@@ -40,7 +40,7 @@ cdef prob_to_phred(float phred, float scale):
     return -scale * numpy.log10(phred)
 
 
-cdef numpy.ndarray[DTYPE_FLOAT_t, ndim=1] get_qualities(aln):
+cdef numpy.ndarray[DTYPE_FLOAT_t, ndim=1] get_qualities(aln, float max_quality):
     if aln.query_qualities is None:
         qualities = numpy.repeat(40, aln.query_length)
     else:
@@ -49,13 +49,15 @@ cdef numpy.ndarray[DTYPE_FLOAT_t, ndim=1] get_qualities(aln):
     qualities[qualities < MIN_PHRED_QUALITY] = MIN_PHRED_QUALITY
 
     scale = max_base_quality - min_base_quality
-    qualities = (qualities / 40.0) * scale + min_base_quality
+    qualities = (qualities / max_quality) * scale + min_base_quality
 
     return qualities
 
 
 
-cpdef double get_alignment_end_score(AlignedSegment aln, str ref_seq, bint add_tag=True) except 9999: 
+cpdef double get_alignment_end_score(
+    AlignedSegment aln, str ref_seq, bint add_tag=True, float max_quality=40.0) except 9999: 
+
     cdef:
         numpy.ndarray[DTYPE_FLOAT_t, ndim=1] qualities
         float clip_left_adjust, clip_right_adjust
@@ -71,7 +73,7 @@ cpdef double get_alignment_end_score(AlignedSegment aln, str ref_seq, bint add_t
 
         int i = 0
 
-    qualities = get_qualities(aln)
+    qualities = get_qualities(aln, max_quality)
     cigartuples = aln.cigartuples
     clip_left_adjust =  min(1.0, cigartuples[0][1] / min_clip_length)
     clip_right_adjust = min(1.0, cigartuples[-1][1] / min_clip_length)

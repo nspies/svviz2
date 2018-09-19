@@ -68,6 +68,7 @@ class GenomeSource:
         self._blacklist = None
 
         self.aligner_type = aligner_type
+        self.max_base_quality = 40.0
 
     def get_seq(self, chrom, start, end, strand):
         seq = self.names_to_contigs[chrom][start:end+1]
@@ -125,7 +126,8 @@ class GenomeSource:
         # aln.score = mc.get_alignment_end_score(aln)
 
         ref_seq = self.get_seq(aln.chrom, aln.reference_start, aln.reference_end, "+").upper()
-        aln.score = _mapq.get_alignment_end_score(aln._read, ref_seq)
+        aln.score = _mapq.get_alignment_end_score(
+            aln._read, ref_seq, max_quality=self.max_base_quality)
         # aln.score = s2
 
         # assert numpy.isclose(aln.score, s2, rtol=1e-5), "{} :: {}".format(aln.score, s2)
@@ -155,7 +157,7 @@ class GenomeSource:
 
         return self._bwa
 
-    def set_aligner_params(self, sequencer):
+    def set_aligner_params(self, sequencer, max_base_quality=40.0):
         if self.aligner_type != "bwa":
             print("not bwa... skipping setting aligner settings")
             return
@@ -182,6 +184,7 @@ class GenomeSource:
         if "reseed_trigger" in params:
             self.bwa.SetReseedTrigger(params["reseed_trigger"])
 
+        self.max_base_quality = max_base_quality
 
     def __getstate__(self):
         state = self.__dict__.copy()

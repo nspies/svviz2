@@ -212,7 +212,7 @@ class DataHub(object):
 
 
     def set_args(self, args):
-        EXTRA_ARG_TYPES = ["single_ended", "sequencer", "split_hap"]
+        EXTRA_ARG_TYPES = ["single_ended", "sequencer", "split_hap", "max_base_quality"]
         self.args = args
 
         self.aligner_type = args.aligner
