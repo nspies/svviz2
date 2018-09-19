@@ -13,6 +13,7 @@ def get_read_batch(sample, datahub):
         datahub.args.batch_size = numpy.inf
         batch = list(_get_read_batch(sample, datahub))[0]
         if len(batch) > datahub.args.downsample:
+            numpy.random.seed(10)
             batch = list(numpy.random.choice(batch, size=datahub.args.downsample, replace=False))
         yield batch
     else:
