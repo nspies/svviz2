@@ -71,6 +71,13 @@ class VCFParser(object):
                 yield get_translocation(variant, self.datahub)
             elif sv_type == "INV":
                 yield get_inversion(variant, self.datahub)
+            elif sv_type == "DUP":
+                if len(variant.alts) == 1 and variant.alts[0] == "<DUP:TANDEM>":
+                    yield get_tandem_duplication(variant, self.datahub)
+                else:
+                    logger.warn("Only tandem duplications are supported; if this duplication is in fact "
+                                "a tandem duplication, make sure that the alt field of the vcf record "
+                                "is '<DUP:TANDEM>': {}".format(variant))
             else:
                 logger.warn("SKIPPING VARIANT: {}".format(variant))
 
@@ -118,6 +125,17 @@ def get_deletion(variant, datahub):
                                                    datahub, variant.id)
     print("))))DEL:", deletion)
     return deletion
+
+def get_tandem_duplication(variant, datahub):
+    chrom, start, end = variant.chrom, variant.start-1, variant.stop-1
+    strand = "+"
+    duplicated_sequence = datahub.genome.get_seq(chrom, start, end, strand)
+
+    sdv = variants.SequenceDefinedVariant(
+        chrom, end, end, duplicated_sequence,
+        datahub, variant.id)
+
+    return sdv
 
 def _parse_breakend(record):
     ref = record.ref

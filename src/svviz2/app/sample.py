@@ -67,6 +67,7 @@ class Sample(object):
 
             self.single_ended = data["single_ended"]
             self.sequencer = data["sequencer"]
+            self.max_base_quality = data["max_base_quality"]
 
             # this is a little hairy -- ideally we'd json serialize
             # the ReadStatistics object rather than pickle it
@@ -82,7 +83,8 @@ class Sample(object):
             result = {
                 "single_ended": self.single_ended,
                 "sequencer": self.sequencer,
-                "read_statistics": read_stats_data
+                "read_statistics": read_stats_data,
+                "max_base_quality": self.max_base_quality
             }
 
             with open(stats_file_path, "w") as outf:
@@ -102,6 +104,7 @@ class Sample(object):
             self.single_ended = True
 
         self.sequencer = "illumina"
+        self.max_base_quality = 40.0
         if self.single_ended:
             mismatches = numpy.mean(self.read_statistics.number_mismatches)
             lengths = numpy.mean(self.read_statistics.readLengths)
@@ -127,6 +130,8 @@ class Sample(object):
             self.single_ended = True
         if "single_ended" in extra_args:
             self.single_ended = str_to_bool(extra_args["single_ended"])
+        if "max_base_quality" in extra_args:
+            self.max_base_quality = float(extra_args["max_base_quality"])
 
         logger.info("Using realignment presets for {}".format(self.sequencer))
 

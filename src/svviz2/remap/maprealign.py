@@ -13,7 +13,7 @@ def map_realign_pairs(batch, datahub, sample):
         ref_genome_sources.append(datahub.genome)
 
     for genome_source in ref_genome_sources+alt_genome_sources:
-        genome_source.set_aligner_params(sample.sequencer)
+        genome_source.set_aligner_params(sample.sequencer, sample.max_base_quality)
 
     import tqdm
     # for read_or_pair in batch:

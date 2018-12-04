@@ -159,6 +159,13 @@ class DataHub(object):
                 continue
 
             logger.info("Working on variant {}: {}".format(count, variant))
+
+            # for allele in ["alt", "ref"]:
+            #     print(f"{allele }"*10)
+            #     print(variant.segments(allele))
+            #     # for part, seq in variant.seqs(allele).items():
+            #         # print(f"{allele }"*10)
+            #         # print(seq)
             self.set_cur_variant(variant)
             yield variant
 
@@ -212,7 +219,7 @@ class DataHub(object):
 
 
     def set_args(self, args):
-        EXTRA_ARG_TYPES = ["single_ended", "sequencer", "split_hap"]
+        EXTRA_ARG_TYPES = ["single_ended", "sequencer", "split_hap", "max_base_quality"]
         self.args = args
 
         self.aligner_type = args.aligner
