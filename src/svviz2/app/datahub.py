@@ -159,6 +159,13 @@ class DataHub(object):
                 continue
 
             logger.info("Working on variant {}: {}".format(count, variant))
+
+            # for allele in ["alt", "ref"]:
+            #     print(f"{allele }"*10)
+            #     print(variant.segments(allele))
+            #     # for part, seq in variant.seqs(allele).items():
+            #         # print(f"{allele }"*10)
+            #         # print(seq)
             self.set_cur_variant(variant)
             yield variant
 
