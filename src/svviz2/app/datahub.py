@@ -150,7 +150,7 @@ class DataHub(object):
     def get_variants(self):
         vcf = vcfparser.VCFParser(self)
 
-        count = 0
+        good_variants = 0
         
         for count, variant in enumerate(vcf.get_variants()):
             if self.args.first_variant is not None and count < self.args.first_variant:
@@ -166,10 +166,11 @@ class DataHub(object):
             #     # for part, seq in variant.seqs(allele).items():
             #         # print(f"{allele }"*10)
             #         # print(seq)
+            good_variants += 1
             self.set_cur_variant(variant)
             yield variant
 
-        if count == 0:
+        if good_variants == 0:
             logger.error("Found no variants in file -- is it formatted properly?")
 
     def set_cur_variant(self, variant):
