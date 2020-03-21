@@ -1,9 +1,9 @@
 import numpy
 
 try:
-    import scipy.misc
+    import scipy.special
     def log_choose(n,k):
-        return numpy.log10(scipy.misc.comb(n,k))
+        return numpy.log10(scipy.special.comb(n,k))
 except ImportError:
     def log_choose(n, k):
         r = 0.0
