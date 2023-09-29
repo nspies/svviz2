@@ -52,7 +52,7 @@ setup(name="svviz2",
       package_dir = {"": "src"},
 
       ext_modules = extensions,
-      setup_requires=["cython"],
+      setup_requires=["cython<3.0"],
       entry_points={"console_scripts": ["svviz2 = svviz2.app.main:main"]},
       install_requires=["pysam>=0.10", "numpy>=1.11.1", "pyfaidx", "tqdm", "pandas", "numpy", 
                         "seqlib>=0.0.6", "genomeview"], 
