@@ -26,7 +26,7 @@ svviz2 requires **python 3.3** or greater. To perform tandem repeat detection, d
 
 To install, run the following command, ideally from within a virtualenv:
 ```
-pip install -U git+git://github.com/nspies/svviz2.git
+pip install -U git+https://github.com/nspies/svviz2.git
 ```
 
 A few more notable changes with respect to version 1.x
